@@ -9,50 +9,45 @@ import SwiftUI
 
 struct HomeView: View {
     var body: some View {
-        ZStack {
-            // ステータスバー
-            HStack(spacing: 10) {
-                Text("5")
-                    .padding(25) // テキストにパディングを追加
-                    .background(
-                        Rectangle()
-                            .fill(Color.red) // 背景色を赤に設定
-                            .frame(width: 75, height: 75)
-                            .opacity(0.5)
-                            .cornerRadius(20) // 角丸を適用
-                    )
-                    .padding(.leading, 10) // テキストの左側にパディングを追加
-                    .foregroundColor(.white) // テキストの色
-                    .font(.system(size: 50))         // テキストのフォントサイズ
-                Spacer()
-                VStack(alignment: .trailing) {
-                        Rectangle()
-                            .frame(width: 200, height: 35)
-                            .padding(.trailing, 16)
-                            .background(
-                                
-                            )
-                        Spacer()
-                        Rectangle()
-                            .frame(width: 50, height: 35)
-                            .padding(.trailing, 16)
-                }
-                .frame(height: 75)
-                .foregroundColor(.green)
-                .cornerRadius(10)
+        GeometryReader { geometry in
+            ScrollView(.horizontal, showsIndicators: false) {
+                Image("HomeBackGroundImage")
+                    .resizable()
+                    .scaledToFit() // 縦に収まるように表示
+                    .frame(height: geometry.size.height) // 縦のサイズを画面いっぱいに
+                    .offset(x: 0, y: 0) // オフセットを指定し、上部分を表示
             }
-            .frame(height: 75)
-            .foregroundColor(.white)
+            HStack {
+                ZStack {    //○ギガ表示
+                    Rectangle()
+                        .fill(Color.white)
+                        .frame(width: 80, height: 80)
+                        .opacity(0.5)
+                        .cornerRadius(20)
+                    
+                    // メインのテキスト
+                    Text("5")
+                        .foregroundColor(.gray)
+                        .font(.system(size: 50))
+                    
+                    // 右下に配置する小さいテキスト
+                    VStack {
+                        Spacer() // 右下に配置するためにスペースを追加
+                        HStack {
+                            Spacer()
+                            Text("GB")
+                                .foregroundColor(.gray)
+                                .font(.system(size: 18))
+                                .padding(5) // 右下に余白を追加
+                        }
+                    }
+                    .frame(width: 80, height: 80) // 同じ大きさのフレームで配置を制御
+                }
+                .padding(.top, 65)
+                .padding(.leading, 30)
+            }
         }
-        .background(
-             //背景画像
-            Image("HomeBackGroundImage")
-                .resizable()
-                .scaledToFill()
-                .frame(width: 1193.36, height: 852)
-                .offset(x: -400, y: 0)
-                .clipped()
-        )
+        .edgesIgnoringSafeArea(.all) // 全画面表示
     }
 }
 
