@@ -1,10 +1,3 @@
-//
-//  HomeView.swift
-//  GigaNeko
-//
-//  Created by 水原　樹 on 2024/10/18.
-//
-
 import SwiftUI
 
 struct HomeView: View {
@@ -18,7 +11,11 @@ struct HomeView: View {
                     .offset(x: 0, y: 0) // オフセットを指定し、上部分を表示
             }
             HStack {
-                ZStack {    //○ギガ表示
+                let screenWidth = geometry.size.width
+                let leftPadding = 30.0 // 左側の隙間を定義
+
+                // ギガ表示のZStack
+                ZStack {
                     Rectangle()
                         .fill(Color.white)
                         .frame(width: 80, height: 80)
@@ -32,19 +29,59 @@ struct HomeView: View {
                     
                     // 右下に配置する小さいテキスト
                     VStack {
-                        Spacer() // 右下に配置するためにスペースを追加
+                        Spacer()
                         HStack {
                             Spacer()
                             Text("GB")
                                 .foregroundColor(.gray)
                                 .font(.system(size: 18))
-                                .padding(5) // 右下に余白を追加
+                                .padding(5)
                         }
                     }
-                    .frame(width: 80, height: 80) // 同じ大きさのフレームで配置を制御
+                    .frame(width: 80, height: 80)
                 }
+                .padding(.leading, leftPadding)
                 .padding(.top, 65)
-                .padding(.leading, 30)
+                
+                Spacer() // ギガと右のRectangleの間にスペースを入れる
+                
+                // 餌の残り時間とポイント表示
+                HStack { // 新しいHStackを追加
+                    Spacer() // 左側にスペースを追加して右寄せにする
+                    VStack(spacing: 20) {
+                        ZStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .frame(width: 230, height: 34)
+                                .opacity(0.5)
+                                .cornerRadius(20)
+                            
+                            // Rectangleの中のテキスト
+                            Text("餌の残り時間")
+                                .foregroundColor(.gray)
+                                .font(.system(size: 14))
+                        }
+                        
+                        HStack {
+                            Spacer() // 左側にスペースを追加して右寄せにする
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color.white)
+                                    .frame(width: 80, height: 23) // 元の幅を維持
+                                    .opacity(0.5)
+                                    .cornerRadius(20)
+                                
+                                // Rectangleの中のテキスト
+                                Text("3000pt")
+                                    .foregroundColor(.gray)
+                                    .font(.system(size: 12))
+                            }
+                        }
+                        .frame(width: 230) // Text1と同じ幅のコンテナを作成
+                    }
+                }
+                .padding(.trailing, leftPadding)
+                .padding(.top, 65)
             }
         }
         .edgesIgnoringSafeArea(.all) // 全画面表示
