@@ -55,50 +55,72 @@ struct FurnitureView: View {
                                             .foregroundColor(.black)
                                     )
                                 
+                                
                                 Spacer()
                                     .frame(height: 10)
-                                
-                                HStack{
-                                    Text("LV.3")
-                                    
-                                    Text("招き猫")
-                                        .font(.title)
-                                } .padding(.top,50)
-                                
                               
-                                
-                                Text("使用料ポイント+20%")
-                                    .padding(.top,50)
-                                Spacer()
-                            }
+                            } // VStack
+                            .padding(.horizontal,50)
                         }
-                    } // HStack
-                    .padding(.leading,50) // ScrollView
+
+                    }// HStack
                     
-                }
+                } // ScrollView
+                .padding(.bottom,20)
                 
-                
-                
-                Button(action: {
-                    // ボタンが押されたときのアクション
-                    print("Button tapped")
-                }) {
-                    HStack {
-                        // 左側の四角いアイコン
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3)) // 背景色をグレーに設定
-                            .frame(width: 30, height: 30)
-                        Text("3000pt")
-                            .font(.system(size: 18, weight: .medium)) // フォントスタイル
-                            .foregroundColor(.black) // 文字色
+                VStack{
+                    // Handle at the top
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(Color.gray)
+                        .frame(width: 90, height: 5)
+                        .padding(.top, 10)
+                    
+                    HStack{
+                        Text("LV.3")
+                            .font(.system(size: 18))
+                            .foregroundColor(.black)
+                        
+                        Text("招き猫")
+                            .font(.title)
+                            .bold()
+                            .foregroundColor(.black)
+                        
                     }
-                    .padding() // ボタン内のパディング
-                    .background(Color(red: 235/255, green: 235/255, blue: 224/255)) // ボタン背景の色
-                    .cornerRadius(12)
-                }
-                
-                Spacer()
+                    .padding(.top,20)
+                    .padding(.bottom,20)
                     
+                    
+                    Text("使用料ポイント+20%")
+                        .padding(.top,20)
+                        .padding(.bottom,50)
+            
+                    
+                    Button(action: {
+                        // ボタンが押されたときのアクション
+                        print("Button tapped")
+                    }) {
+                        HStack {
+                            // 左側の四角いアイコン
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.gray.opacity(0.3)) // 背景色をグレーに設定
+                                .frame(width: 30, height: 30)
+                            Text("3000pt")
+                                .font(.system(size: 18, weight: .medium)) // フォントスタイル
+                                .foregroundColor(.black) // 文字色
+                        }
+                        .padding() // ボタン内のパディング
+                        .background(Color(red: 235/255, green: 235/255, blue: 224/255)) // ボタン背景の色
+                        .cornerRadius(12)
+                    }
+                    
+                    Spacer()
+                    
+                }
+                .frame(maxWidth: .infinity,maxHeight: .infinity)
+                .background(Color.white)
+                .cornerRadius(40)
+                .shadow(radius: 5)
+                .ignoresSafeArea(edges: .bottom)
             }
         }
     }
