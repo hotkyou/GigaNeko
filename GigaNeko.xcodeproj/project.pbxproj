@@ -7,9 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		47DB508E2CC22DF100F6FB2D /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 47DB508D2CC22DF100F6FB2D /* FirebaseDatabase */; };
-		47DB50902CC22DF600F6FB2D /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 47DB508F2CC22DF600F6FB2D /* FirebaseCore */; };
-		47DB50922CC22DFF00F6FB2D /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 47DB50912CC22DFF00F6FB2D /* FirebaseAuth */; };
+		175F4FB12CC61DAF00E4E4FE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB02CC61DAF00E4E4FE /* FirebaseAuth */; };
+		175F4FB32CC61DAF00E4E4FE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB22CC61DAF00E4E4FE /* FirebaseCore */; };
+		175F4FB52CC61DAF00E4E4FE /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB42CC61DAF00E4E4FE /* FirebaseDatabase */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -35,9 +35,22 @@
 		4773A56D2CC0F01600CCD0B2 /* GigaNekoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1702AECF2CD353A100E25CD2 /* Exceptions for "GigaNeko" folder in "GigaNeko" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 4773A5522CC0F01300CCD0B2 /* GigaNeko */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		4773A5552CC0F01300CCD0B2 /* GigaNeko */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1702AECF2CD353A100E25CD2 /* Exceptions for "GigaNeko" folder in "GigaNeko" target */,
+			);
 			path = GigaNeko;
 			sourceTree = "<group>";
 		};
@@ -58,9 +71,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				47DB50902CC22DF600F6FB2D /* FirebaseCore in Frameworks */,
-				47DB50922CC22DFF00F6FB2D /* FirebaseAuth in Frameworks */,
-				47DB508E2CC22DF100F6FB2D /* FirebaseDatabase in Frameworks */,
+				175F4FB52CC61DAF00E4E4FE /* FirebaseDatabase in Frameworks */,
+				175F4FB32CC61DAF00E4E4FE /* FirebaseCore in Frameworks */,
+				175F4FB12CC61DAF00E4E4FE /* FirebaseAuth in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -129,9 +142,9 @@
 			);
 			name = GigaNeko;
 			packageProductDependencies = (
-				47DB508D2CC22DF100F6FB2D /* FirebaseDatabase */,
-				47DB508F2CC22DF600F6FB2D /* FirebaseCore */,
-				47DB50912CC22DFF00F6FB2D /* FirebaseAuth */,
+				175F4FB02CC61DAF00E4E4FE /* FirebaseAuth */,
+				175F4FB22CC61DAF00E4E4FE /* FirebaseCore */,
+				175F4FB42CC61DAF00E4E4FE /* FirebaseDatabase */,
 			);
 			productName = GigaNeko;
 			productReference = 4773A5532CC0F01300CCD0B2 /* GigaNeko.app */;
@@ -216,7 +229,7 @@
 			mainGroup = 4773A54A2CC0F01300CCD0B2;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				47DB508B2CC22D9100F6FB2D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 4773A5542CC0F01300CCD0B2 /* Products */;
@@ -419,9 +432,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GigaNeko/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -448,9 +462,10 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = GigaNeko/Info.plist;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -583,7 +598,7 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		47DB508B2CC22D9100F6FB2D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+		175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
 			requirement = {
@@ -594,20 +609,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		47DB508D2CC22DF100F6FB2D /* FirebaseDatabase */ = {
+		175F4FB02CC61DAF00E4E4FE /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 47DB508B2CC22D9100F6FB2D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseDatabase;
+			package = 175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAuth;
 		};
-		47DB508F2CC22DF600F6FB2D /* FirebaseCore */ = {
+		175F4FB22CC61DAF00E4E4FE /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 47DB508B2CC22D9100F6FB2D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
 		};
-		47DB50912CC22DFF00F6FB2D /* FirebaseAuth */ = {
+		175F4FB42CC61DAF00E4E4FE /* FirebaseDatabase */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 47DB508B2CC22D9100F6FB2D /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAuth;
+			package = 175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
