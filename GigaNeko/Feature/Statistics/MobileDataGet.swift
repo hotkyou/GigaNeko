@@ -17,7 +17,7 @@ struct MobailDataGetView: View {
     
     var body: some View {
         VStack {
-            Text("Wi-Fi Sent: \(convertToGB(bytes: wifiSent)) GB")
+            Text("Wi-Fi Sent: \(DataUsageManager.loadSavedDataUsage()) GB")
             Text("Wi-Fi Received: \(convertToGB(bytes: wifiReceived)) GB")
             Text("WWAN (Mobile) Sent: \(convertToGB(bytes: wwanSent)) GB")
             Text("WWAN (Mobile) Received: \(convertToGB(bytes: wwanReceived)) GB")

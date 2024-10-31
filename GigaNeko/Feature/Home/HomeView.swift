@@ -1,6 +1,10 @@
 import SwiftUI
 
 struct HomeView: View {
+    @State private var offsetY: CGFloat = 0
+    @State private var movingDown = true
+    let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    
     var body: some View {
         GeometryReader { geometry in
             ScrollView(.horizontal, showsIndicators: false) {
@@ -119,7 +123,29 @@ struct HomeView: View {
                 .padding(.top, 65)
             } // HStack
             
-            Spacer()
+            HStack {
+                Spacer()
+                VStack {
+                    Spacer()
+                    Image("Neko")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 300)
+                        .offset(y: offsetY)
+                    Spacer()
+                }
+                Spacer()
+            }
+            .onReceive(timer) { _ in
+                withAnimation(.easeInOut(duration: 2)) {
+                    if movingDown {
+                        offsetY = 5
+                    } else {
+                        offsetY = -20
+                    }
+                    movingDown.toggle()
+                }
+            }
             
             VStack {
                 Spacer()
