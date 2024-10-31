@@ -24,14 +24,8 @@ struct ShopView: View {
     var body: some View {
         ZStack{
             //カラーストップのグラデーション
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 225/255, green: 255/255, blue: 203/255), // #E1FFCB
-                    Color(red: 255/255, green: 242/255, blue: 209/255)  // #FFF2D1
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            ).edgesIgnoringSafeArea(.all)
+            Image("Background")
+                .edgesIgnoringSafeArea(.all)
             
             VStack {
                 HStack{
@@ -143,6 +137,7 @@ struct ShopView: View {
                     }
                 }
                 .background(Color.white)
+                .cornerRadius(10) // 全体の角丸
                 
             }.padding(.horizontal,64) // VStack
         }// Zstack
