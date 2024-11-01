@@ -122,6 +122,7 @@ struct SettingView: View {
                         }
                         .toggleStyle(SwitchToggleStyle(tint: Color.gray))
                         .padding(.bottom,10)
+                        .padding(.trailing,10)
                         
                         Toggle(isOn: $toggleState2) {
                             Text("設定")
@@ -129,7 +130,7 @@ struct SettingView: View {
                                 .padding(.leading,30)
                         }
                         .toggleStyle(SwitchToggleStyle(tint: Color.yellow))
-                        
+                        .padding(.trailing,10)
                     }
                     
         
