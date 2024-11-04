@@ -9,7 +9,7 @@ import SwiftUI
 import Foundation
 import Darwin
 
-struct MobailDataGetView: View {
+struct MobileDataGetView: View {
     @State private var wifi: UInt64 = 0
     @State private var wwan: UInt64 = 0
     
@@ -42,5 +42,5 @@ struct MobailDataGetView: View {
 }
 
 #Preview {
-    MobailDataGetView()
+    MobileDataGetView()
 }
