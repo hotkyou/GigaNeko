@@ -10,25 +10,19 @@ import Foundation
 import Darwin
 
 struct MobailDataGetView: View {
-    @State private var wifiSent: UInt64 = 0
-    @State private var wifiReceived: UInt64 = 0
-    @State private var wwanSent: UInt64 = 0
-    @State private var wwanReceived: UInt64 = 0
+    @State private var wifi: UInt64 = 0
+    @State private var wwan: UInt64 = 0
     
     var body: some View {
         VStack {
-            Text("Wi-Fi Sent: \(convertToGB(bytes: wifiSent)) GB")
-            Text("Wi-Fi Received: \(convertToGB(bytes: wifiReceived)) GB")
-            Text("WWAN (Mobile) Sent: \(convertToGB(bytes: wwanSent)) GB")
-            Text("WWAN (Mobile) Received: \(convertToGB(bytes: wwanReceived)) GB")
+            Text("Wi-Fi: \(wifi) byte")
+            Text("WWAN (Mobile): \((wwan)) byte")
+            Text("Time: \(upTime())")
         }
         .padding()
         .onAppear {
-            let counters = DataUsageManager.loadSavedDataUsage()
-            wifiSent = counters[0]
-            wifiReceived = counters[1]
-            wwanSent = counters[2]
-            wwanReceived = counters[3]
+            wifi = SystemDataUsage.wifiCompelete
+            wwan = SystemDataUsage.wwanCompelete
         }
     }
     
@@ -36,6 +30,14 @@ struct MobailDataGetView: View {
     func convertToGB(bytes: UInt64) -> String {
         let gb = Double(bytes) / 1_000_000_000
         return String(format: "%.2f", gb)  // 小数点以下2桁まで表示
+    }
+    
+    func upTime() -> String {
+        let uptime:TimeInterval = ProcessInfo().systemUptime
+        let dateFormatter = DateComponentsFormatter()
+        dateFormatter.unitsStyle = .full
+        dateFormatter.allowedUnits = [.hour, .minute, .second]
+        return dateFormatter.string(from: uptime)!
     }
 }
 
