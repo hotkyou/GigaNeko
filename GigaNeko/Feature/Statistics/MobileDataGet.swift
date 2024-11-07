@@ -25,6 +25,10 @@ struct MobileDataGetView: View {
             .padding()
             .onAppear {
                 saveDataUsage()
+                let date = Date()
+                print(loadHourlyDataUsage(for: date))
+                print(loadWeeklyDataUsage(for: date))
+                print(loadMonthlyDataUsage(for: date))
                 let savedData = loadSavedDataUsage()
                 wifi = savedData.wifi
                 wwan = savedData.wwan
