@@ -30,6 +30,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         // バックグラウンドタスクのスケジュール設定
         scheduleAppRefresh()
+        print("アプリ起動")
         return true
     }
     
@@ -49,10 +50,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func handleAppRefresh(task: BGAppRefreshTask) {
         // 次回の実行をスケジュール
         scheduleAppRefresh()
+        print("タスク実行")
         
         // 通信量を取得して保存
-        let dataUsage = DataUsageManager.getDataUsage()
-        DataUsageManager.saveDataUsage(dataUsage)
+        saveDataUsage()
+        
         
         // タスク完了のマネージメント
         task.expirationHandler = {
