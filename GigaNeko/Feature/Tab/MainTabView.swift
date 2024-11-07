@@ -17,7 +17,7 @@ struct MainTabView: View {
                     Image(systemName: "house")
                     Text("Home")
                 } .tag(0)
-            MobileDataGetView()
+            StatisticsView()
                 .tabItem {
                     Image(systemName: "book.fill")
                     Text("Word")
