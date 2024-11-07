@@ -66,20 +66,6 @@ class SystemDataUsage {
         }
         return dataUsageInfo
     }
-    
-    // データを保存する関数
-    static func saveDataUsage(_ dataUsage: [UInt64]) {
-        UserDefaults.standard.set(wifiCompelete, forKey: "wifi")
-        UserDefaults.standard.set(wwanCompelete, forKey: "wwan")
-    }
-    
-    // 保存されたデータを読み込む関数
-    static func loadSavedDataUsage() -> [UInt64] {
-        let wifi = UserDefaults.standard.object(forKey: "wifi") as? UInt64 ?? 0
-        let wwan = UserDefaults.standard.object(forKey: "wwan") as? UInt64 ?? 0
-        
-        return [wifi, wwan]
-    }
 }
 
 struct DataUsageInfo {

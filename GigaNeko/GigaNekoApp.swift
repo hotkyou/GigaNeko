@@ -53,7 +53,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("タスク実行")
         
         // 通信量を取得して保存
-        SystemDataUsage.saveDataUsage([SystemDataUsage.wifiCompelete, SystemDataUsage.wwanCompelete])
+        saveDataUsage()
+        
         
         // タスク完了のマネージメント
         task.expirationHandler = {
