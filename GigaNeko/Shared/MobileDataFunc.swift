@@ -10,8 +10,8 @@ struct SavedDataUsage {
 func saveDataUsage() {
     let wifi = SystemDataUsage.wifiCompelete
     let wwan = SystemDataUsage.wwanCompelete
-    var wifiArray: Array<UInt64> = []
-    var wwanArray: Array<UInt64> = []
+    var wifiArray = UserDefaults.standard.array(forKey: "wifi") as? [UInt64] ?? []
+    var wwanArray = UserDefaults.standard.array(forKey: "wwan") as? [UInt64] ?? []
     let lastLaunchTime = loadSavedDataUsage().launchtime
     
     print(wifi)
