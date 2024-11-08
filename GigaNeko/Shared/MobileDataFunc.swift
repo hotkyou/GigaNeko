@@ -79,7 +79,7 @@ func loadHourlyDataUsage(for date: Date) -> [HourlyDataUsage] {
 }
 
 // 週ごとに日単位でデータを取得
-func loadWeeklyDataUsage(for startDate: Date) -> [DailyDataUsage] {
+func loadWeeklyDataUsage(for date: Date) -> [DailyDataUsage] {
     guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
         return []
     }
@@ -87,21 +87,39 @@ func loadWeeklyDataUsage(for startDate: Date) -> [DailyDataUsage] {
     let calendar = Calendar.current
     var dailyDataUsage: [DailyDataUsage] = []
     
+    // 指定された日付の週の日曜日を取得
+    guard let sunday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)) else {
+        return []
+    }
+    
+    // 日曜日から土曜日までの7日間のデータを取得
     for dayOffset in 0..<7 {
-        guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) else { continue }
+        guard let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: sunday) else { continue }
         
+        // その日のデータをフィルタリング
         let dailyData = dataUsageArray.filter { entry in
-            if let entryDate = entry["date"] as? Date, calendar.isDate(entryDate, inSameDayAs: date) {
-                return true
+            if let entryDate = entry["date"] as? Date {
+                return calendar.isDate(entryDate, inSameDayAs: targetDate)
             }
             return false
         }
         
+        // その日の合計使用量を計算
         let totalWifi = dailyData.reduce(0) { $0 + ($1["wifi"] as? UInt64 ?? 0) }
         let totalWwan = dailyData.reduce(0) { $0 + ($1["wwan"] as? UInt64 ?? 0) }
         
-        dailyDataUsage.append(DailyDataUsage(day: calendar.component(.day, from: date), wifi: totalWifi, wwan: totalWwan))
+        // 曜日のインデックス（0=日曜、1=月曜、...、6=土曜）を取得
+        let dayIndex = calendar.component(.weekday, from: targetDate) - 1
+        
+        dailyDataUsage.append(DailyDataUsage(
+            day: dayIndex,
+            wifi: totalWifi,
+            wwan: totalWwan
+        ))
     }
+    
+    // 曜日順（日曜から土曜）でソート
+    dailyDataUsage.sort { $0.day < $1.day }
     
     return dailyDataUsage
 }
