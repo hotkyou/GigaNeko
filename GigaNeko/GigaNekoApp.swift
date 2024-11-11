@@ -7,6 +7,7 @@ struct GigaNekoApp: App {
     // Firebaseの初期化
     init() {
         FirebaseApp.configure()
+        saveDataUsage()
     }
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate

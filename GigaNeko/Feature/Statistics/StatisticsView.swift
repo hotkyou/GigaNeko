@@ -75,7 +75,7 @@ struct StatisticsView: View {
     
     var body: some View {
         NavigationView {
-            ScrollView {
+            ZStack {
                 VStack(spacing: 20) {
                     // 期間選択セグメント
                     VStack {
@@ -134,7 +134,7 @@ struct StatisticsView: View {
                                     y: .value("WiFi", item.wifi)
                                 )
                                 .foregroundStyle(by: .value("Type", "WiFi"))
-                                .interpolationMethod(.catmullRom)
+                                //.interpolationMethod(.catmullRom)
                                 
                                 // モバイルデータのライン
                                 LineMark(
@@ -142,7 +142,7 @@ struct StatisticsView: View {
                                     y: .value("Mobile", item.wwan)
                                 )
                                 .foregroundStyle(by: .value("Type", "モバイル"))
-                                .interpolationMethod(.catmullRom)
+                                //.interpolationMethod(.catmullRom)
                             }
                             
                             if let selectedDate = rawSelectedDate {
@@ -212,6 +212,9 @@ struct StatisticsView: View {
             }
             .navigationTitle("データ使用量統計")
             .background(Color(.systemGroupedBackground))
+        }
+        .onAppear {
+            saveDataUsage()
         }
     }
     

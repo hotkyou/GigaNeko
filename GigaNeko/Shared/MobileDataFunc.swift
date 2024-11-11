@@ -8,34 +8,49 @@ struct SavedDataUsage {
 
 // データを保存する関数
 func saveDataUsage() {
-    let wifi = SystemDataUsage.wifiCompelete
-    let wwan = SystemDataUsage.wwanCompelete
+    let currentWifi = SystemDataUsage.wifiCompelete
+    let currentWwan = SystemDataUsage.wwanCompelete
     let currentDate = Date()
+    
+    //差を管理しているDB
     var dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] ?? []
-    let lastLaunchTime = loadSavedDataUsage().launchtime
+    //前回の現在データ使用量を管理するDB
+    let lastUsageDict = UserDefaults.standard.dictionary(forKey: "lastUsage") ?? [:]
+    let previousWifi = lastUsageDict["wifi"] as? UInt64 ?? 0
+    let previousWwan = lastUsageDict["wwan"] as? UInt64 ?? 0
+    let previousLaunchTime = lastUsageDict["launchtime"] as? TimeInterval ?? 0
+    // 現在の起動時間を取得
+    let currentLaunchTime = launchTime()
     
-    print(wifi)
-    // 再起動チェック
-    if launchTime() > lastLaunchTime {
-        // 起動時間が前回の起動より長ければ、配列の最後の辞書を上書き
-        if var lastDataUsage = dataUsageArray.last {
-            lastDataUsage["wifi"] = wifi
-            lastDataUsage["wwan"] = wwan
-            lastDataUsage["date"] = currentDate
-            dataUsageArray[dataUsageArray.count - 1] = lastDataUsage
-        } else {
-            // 初回起動または月の初め
-            dataUsageArray.append(["wifi": wifi, "wwan": wwan, "date": currentDate])
-        }
+    // データの差分を計算
+    var wifiDifference: UInt64
+    var wwanDifference: UInt64
+    
+    if currentLaunchTime <  previousLaunchTime {
+        print("再起動")
+        // 再起動後の処理
+        wifiDifference = currentWifi
+        wwanDifference = currentWwan
     } else {
-        // 起動時間が短ければ配列に新しいデータを追加
-        dataUsageArray.append(["wifi": wifi, "wwan": wwan, "date": currentDate])
+        print("通常起動")
+        // 通常起動時の処理（差分計算）
+        print(previousWifi, previousWwan)
+        wifiDifference = currentWifi - previousWifi
+        wwanDifference = currentWwan - previousWwan
     }
-    print(dataUsageArray)
     
+    // 差DBに入れるためのデータ
+    let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
+    dataUsageArray.append(differenceEntry)
     UserDefaults.standard.set(dataUsageArray, forKey: "dataUsage")
-    UserDefaults.standard.set(launchTime(), forKey: "launchtime")
+    
+    // 現在の使用量を保存
+    let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
+    UserDefaults.standard.set(newLastUsage, forKey: "lastUsage")
+    
+    print("Data Usage Array with Differences: \(dataUsageArray)")
 }
+
 
 // データ構造体
 struct HourlyDataUsage {
