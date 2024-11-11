@@ -6,6 +6,18 @@ struct SavedDataUsage {
     let launchtime: TimeInterval
 }
 
+struct HourlyDataUsage {
+    var hour: Int
+    var wifi: UInt64
+    var wwan: UInt64
+}
+
+struct DailyDataUsage {
+    var day: Int
+    var wifi: UInt64
+    var wwan: UInt64
+}
+
 // データを保存する関数
 func saveDataUsage() {
     let currentWifi = SystemDataUsage.wifiCompelete
@@ -49,20 +61,6 @@ func saveDataUsage() {
     UserDefaults.standard.set(newLastUsage, forKey: "lastUsage")
     
     print("Data Usage Array with Differences: \(dataUsageArray)")
-}
-
-
-// データ構造体
-struct HourlyDataUsage {
-    var hour: Int
-    var wifi: UInt64
-    var wwan: UInt64
-}
-
-struct DailyDataUsage {
-    var day: Int
-    var wifi: UInt64
-    var wwan: UInt64
 }
 
 // 日ごとに時間単位でデータを取得
