@@ -20,6 +20,10 @@ struct StatisticsView: View {
             //カラーストップのグラデーション
             Image("StaticBackGround")
                 .edgesIgnoringSafeArea(.all)
+            
+            // FUCK: 画面遷移した時に謎に下にいくから調整
+            // 原因は画面遷移した時のBackが邪魔で
+            // ごめんなせえ
             VStack{
                 HStack(spacing: 20){
                     Text("グラフ")
@@ -37,7 +41,7 @@ struct StatisticsView: View {
                         }
                     
                 }
-                .padding(.top,112)
+                .padding(.top,92)
                 .padding(.bottom,20)
                 if selectedTab == "グラフ" {
                     HStack(spacing: 20) {
