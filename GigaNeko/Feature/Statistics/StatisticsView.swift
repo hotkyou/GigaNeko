@@ -2,324 +2,381 @@ import SwiftUI
 import Foundation
 import Charts
 
-// データ構造体
+// MARK: - 列挙型と構造体
+enum TimeSegment: String, CaseIterable {
+    case daily = "日"
+    case weekly = "週"
+    case monthly = "月"
+    
+    var calendarComponent: Calendar.Component {
+        switch self {
+        case .daily: return .day
+        case .weekly: return .weekOfYear
+        case .monthly: return .month
+        }
+    }
+    
+    var strideComponent: Calendar.Component {
+        switch self {
+        case .daily: return .hour
+        case .weekly, .monthly: return .day
+        }
+    }
+    
+    var granularity: Calendar.Component {
+        switch self {
+        case .daily: return .hour
+        case .weekly, .monthly: return .day
+        }
+    }
+}
 
+// MARK: - データポイント構造体
+struct DataPoint: Identifiable {
+    let id = UUID()
+    let date: Date
+    let wifi: Double
+    let wwan: Double
+    
+    var total: Double { wifi + wwan }
+}
+
+// MARK: - StatisticsView
 struct StatisticsView: View {
-    @State private var selectedSegment = "日"
+    // MARK: - Properties
+    @State private var selectedSegment: TimeSegment = .daily
     @State private var selectedDataPoint: Date?
     @State private var rawSelectedDate: Date?
-    
-    private let timeSegments = ["日", "週", "月"]
     @State private var currentDate = Date()
     
-    // 週の開始日（日曜日）を取得
+    private let calendar = Calendar.current
+    
+    // MARK: - Computed Properties
     private var weekStartDate: Date {
-        let calendar = Calendar.current
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)
         return calendar.date(from: components) ?? currentDate
     }
     
-    // データ取得用の計算プロパティ
-    private var displayData: [(date: Date, wifi: Double, wwan: Double)] {
+    private var displayData: [DataPoint] {
         switch selectedSegment {
-        case "日":
-            let hourlyData = loadHourlyDataUsage(for: currentDate)
-            return hourlyData.map { usage in
-                let date = Calendar.current.date(bySettingHour: usage.hour, minute: 0, second: 0, of: currentDate) ?? currentDate
-                return (date, Double(usage.wifi) / 1024 / 1024 / 1024, Double(usage.wwan) / 1024 / 1024 / 1024) // バイトからGBに変換
-            }
-        case "週":
-            let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
-            return weeklyData.map { usage in
-                let date = Calendar.current.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
-                return (date, Double(usage.wifi) / 1024 / 1024 / 1024, Double(usage.wwan) / 1024 / 1024 / 1024)
-            }
-        case "月":
-            let monthlyData = loadMonthlyDataUsage(for: currentDate)
-            return monthlyData.map { usage in
-                let date = Calendar.current.date(bySetting: .day, value: usage.day, of: currentDate) ?? currentDate
-                return (date, Double(usage.wifi) / 1024 / 1024 / 1024, Double(usage.wwan) / 1024 / 1024 / 1024)
-            }
-        default:
-            return []
+        case .daily:
+            return loadHourlyData()
+        case .weekly:
+            return loadWeeklyData()
+        case .monthly:
+            return loadMonthlyData()
         }
     }
     
-    // 選択された期間の統計情報を計算
     private var statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
-        let relevantData: [(date: Date, wifi: Double, wwan: Double)]
-        
-        switch selectedSegment {
-        case "日":
-            relevantData = displayData.filter { Calendar.current.isDate($0.date, inSameDayAs: currentDate) }
-        case "週":
-            relevantData = displayData.filter { date in
-                let calendar = Calendar.current
-                return calendar.isDate(date.date, equalTo: weekStartDate, toGranularity: .weekOfYear)
-            }
-        case "月":
-            relevantData = displayData.filter { date in
-                let calendar = Calendar.current
-                return calendar.isDate(date.date, equalTo: currentDate, toGranularity: .month)
-            }
-        default:
-            relevantData = []
-        }
-        
+        let relevantData = filterDataForCurrentPeriod()
         let totalWifi = relevantData.reduce(0) { $0 + $1.wifi }
         let totalWwan = relevantData.reduce(0) { $0 + $1.wwan }
-        let maxTotal = relevantData.map { $0.wifi + $0.wwan }.max() ?? 0
+        let maxTotal = relevantData.map(\.total).max() ?? 0
         
         return (totalWifi, totalWwan, maxTotal)
     }
     
+    // MARK: - Body
     var body: some View {
         NavigationView {
             ZStack {
+                Color(.systemGroupedBackground).ignoresSafeArea()
+                
                 VStack(spacing: 20) {
-                    // 期間選択セグメント
-                    VStack {
-                        Picker("期間", selection: $selectedSegment) {
-                            ForEach(timeSegments, id: \.self) { segment in
-                                Text(segment).tag(segment)
-                            }
-                        }
-                        .pickerStyle(SegmentedPickerStyle())
-                        
-                        // 日付選択ナビゲーション
-                        HStack {
-                            Button(action: { moveDate(by: -1) }) {
-                                Image(systemName: "chevron.left")
-                            }
-                            
-                            Text(formattedDate)
-                                .font(.headline)
-                            
-                            Button(action: { moveDate(by: 1) }) {
-                                Image(systemName: "chevron.right")
-                            }
-                        }
-                    }
-                    .padding(.horizontal)
-                    
-                    // 統計情報カード
-                    HStack(spacing: 15) {
-                        StatCard(
-                            title: "WiFi使用量",
-                            value: String(format: "%.2f GB", statistics.totalWifi)
-                        )
-                        StatCard(
-                            title: "モバイル使用量",
-                            value: String(format: "%.2f GB", statistics.totalWwan)
-                        )
-                        StatCard(
-                            title: "合計使用量",
-                            value: String(format: "%.2f GB", statistics.totalWifi + statistics.totalWwan)
-                        )
-                    }
-                    .padding(.horizontal)
-                    
-                    // グラフ表示
-                    VStack(alignment: .leading) {
-                        Text("使用量推移")
-                            .font(.headline)
-                            .padding(.leading)
-                        
-                        // Chart部分を更新
-                        Chart {
-                            ForEach(displayData, id: \.date) { item in
-                                // WiFiデータのライン
-                                LineMark(
-                                    x: .value("Date", item.date),
-                                    y: .value("WiFi", item.wifi)
-                                )
-                                .foregroundStyle(by: .value("Type", "WiFi"))
-                                //.interpolationMethod(.catmullRom)
-                                
-                                // モバイルデータのライン
-                                LineMark(
-                                    x: .value("Date", item.date),
-                                    y: .value("Mobile", item.wwan)
-                                )
-                                .foregroundStyle(by: .value("Type", "モバイル"))
-                                //.interpolationMethod(.catmullRom)
-                            }
-                            
-                            if let selectedDate = rawSelectedDate {
-                                RuleMark(x: .value("Selected", selectedDate))
-                                    .foregroundStyle(.gray.opacity(0.3))
-                                    .annotation(position: .top) {
-                                        if let dataPoint = displayData.first(where: { Calendar.current.isDate($0.date, equalTo: selectedDate, toGranularity: getGranularity()) }) {
-                                            VStack {
-                                                Text(dataPoint.date, format: getDateFormat())
-                                                    .font(.caption)
-                                                Text("WiFi: \(String(format: "%.2f GB", dataPoint.wifi))")
-                                                    .foregroundColor(.blue)
-                                                Text("Mobile: \(String(format: "%.2f GB", dataPoint.wwan))")
-                                                    .foregroundColor(.orange)
-                                            }
-                                            .padding(8)
-                                            .background(Color(.systemBackground))
-                                            .cornerRadius(8)
-                                        }
-                                    }
-                            }
-                        }
-                        .chartForegroundStyleScale([
-                            "WiFi": .blue,
-                            "モバイル": .orange
-                        ])
-                        .chartXScale(domain: getChartDateRange())
-                        .chartXAxis {
-                            AxisMarks(values: .stride(by: getStrideBy())) { value in
-                                if let date = value.as(Date.self) {
-                                    AxisValueLabel {
-                                        Text(date, format: getAxisLabelFormat())
-                                    }
-                                }
-                            }
-                        }
-                        .chartYAxis {
-                            AxisMarks(position: .leading) { value in
-                                AxisValueLabel {
-                                    if let doubleValue = value.as(Double.self) {
-                                        Text(String(format: "%.1f GB", doubleValue))
-                                    }
-                                }
-                            }
-                        }
-                        .chartXSelection(value: $rawSelectedDate)
-                        .frame(height: 300)
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color(.systemBackground))
-                                .shadow(radius: 2)
-                        )
-                        
-                        // 凡例
-                        HStack {
-                            Label("WiFi", systemImage: "circle.fill")
-                                .foregroundColor(.blue)
-                            Spacer()
-                            Label("モバイル", systemImage: "circle.fill")
-                                .foregroundColor(.orange)
-                        }
-                        .padding(.horizontal)
-                    }
-                    .padding()
+                    timeSelectionView
+                    statisticsCardsView
+                    chartView
                 }
             }
             .navigationTitle("データ使用量統計")
-            .background(Color(.systemGroupedBackground))
         }
-        .onAppear {
-            saveDataUsage()
+        .onAppear { saveDataUsage() }
+    }
+    
+    // MARK: - Subviews
+    private var timeSelectionView: some View {
+        VStack {
+            Picker("期間", selection: $selectedSegment) {
+                ForEach(TimeSegment.allCases, id: \.self) { segment in
+                    Text(segment.rawValue).tag(segment)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            
+            dateNavigationView
+        }
+        .padding(.horizontal)
+    }
+    
+    private var dateNavigationView: some View {
+        HStack {
+            Button(action: { moveDate(by: -1) }) {
+                Image(systemName: "chevron.left")
+            }
+            
+            Text(formattedDate)
+                .font(.headline)
+            
+            Button(action: { moveDate(by: 1) }) {
+                Image(systemName: "chevron.right")
+            }
         }
     }
     
-    // ヘルパー関数
-    private func moveDate(by value: Int) {
+    private var statisticsCardsView: some View {
+        HStack(spacing: 15) {
+            StatCard(
+                title: "WiFi使用量",
+                value: String(format: "%.2f GB", statistics.totalWifi)
+            )
+            StatCard(
+                title: "モバイル使用量",
+                value: String(format: "%.2f GB", statistics.totalWwan)
+            )
+            StatCard(
+                title: "合計使用量",
+                value: String(format: "%.2f GB", statistics.totalWifi + statistics.totalWwan)
+            )
+        }
+        .padding(.horizontal)
+    }
+    
+    private var chartView: some View {
+        VStack(alignment: .leading) {
+            Text("使用量推移")
+                .font(.headline)
+                .padding(.leading)
+            
+            Chart {
+                ForEach(displayData) { item in
+                    LineMark(
+                        x: .value("Date", item.date),
+                        y: .value("WiFi", item.wifi)
+                    )
+                    .foregroundStyle(by: .value("Type", "WiFi"))
+                    .interpolationMethod(.linear)
+                    
+                    LineMark(
+                        x: .value("Date", item.date),
+                        y: .value("Mobile", item.wwan)
+                    )
+                    .foregroundStyle(by: .value("Type", "モバイル"))
+                    .interpolationMethod(.linear)
+                }
+                
+                if let selectedDate = rawSelectedDate {
+                    RuleMark(x: .value("Selected", selectedDate))
+                        .foregroundStyle(.gray.opacity(0.3))
+                        .annotation(position: .top) {
+                            selectedDataAnnotation(for: selectedDate)
+                        }
+                }
+            }
+            .chartForegroundStyleScale([
+                "WiFi": .blue,
+                "モバイル": .orange
+            ])
+            .chartXScale(domain: getChartDateRange())
+            .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
+            .chartXAxis(content: customXAxis)
+            .chartYAxis(content: customYAxis)
+            .chartXSelection(value: $rawSelectedDate)
+            .frame(height: 300)
+            .padding()
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color(.systemBackground))
+                    .shadow(radius: 2)
+            )
+            
+            legendView
+        }
+        .padding()
+    }
+    
+    private var legendView: some View {
+        HStack {
+            Label("WiFi", systemImage: "circle.fill")
+                .foregroundColor(.blue)
+            Spacer()
+            Label("モバイル", systemImage: "circle.fill")
+                .foregroundColor(.orange)
+        }
+        .padding(.horizontal)
+    }
+    
+    // MARK: - Helper Methods
+    private func loadHourlyData() -> [DataPoint] {
+        let hourlyData = loadHourlyDataUsage(for: currentDate)
+        return hourlyData.map { usage in
+            let date = calendar.date(bySettingHour: usage.hour, minute: 0, second: 0, of: currentDate) ?? currentDate
+            return DataPoint(
+                date: date,
+                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
+                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
+            )
+        }
+    }
+    
+    private func loadWeeklyData() -> [DataPoint] {
+        let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
+        return weeklyData.map { usage in
+            let date = calendar.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
+            return DataPoint(
+                date: date,
+                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
+                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
+            )
+        }
+    }
+    
+    private func loadMonthlyData() -> [DataPoint] {
+        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
+            return []
+        }
+        
+        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
+        return monthlyData.map { usage in
+            guard let date = calendar.date(byAdding: .day, value: usage.day - 1, to: startOfMonth) else {
+                return DataPoint(date: currentDate, wifi: 0, wwan: 0)
+            }
+            return DataPoint(
+                date: date,
+                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
+                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
+            )
+        }
+    }
+    
+    private func filterDataForCurrentPeriod() -> [DataPoint] {
         switch selectedSegment {
-        case "日":
-            currentDate = Calendar.current.date(byAdding: .day, value: value, to: currentDate) ?? currentDate
-        case "週":
-            currentDate = Calendar.current.date(byAdding: .weekOfYear, value: value, to: currentDate) ?? currentDate
-        case "月":
-            currentDate = Calendar.current.date(byAdding: .month, value: value, to: currentDate) ?? currentDate
-        default:
-            break
+        case .daily:
+            return displayData.filter { calendar.isDate($0.date, inSameDayAs: currentDate) }
+        case .weekly:
+            return displayData.filter { calendar.isDate($0.date, equalTo: weekStartDate, toGranularity: .weekOfYear) }
+        case .monthly:
+            return displayData.filter { calendar.isDate($0.date, equalTo: currentDate, toGranularity: .month) }
+        }
+    }
+    
+    private func moveDate(by value: Int) {
+        if let newDate = calendar.date(byAdding: selectedSegment.calendarComponent, value: value, to: currentDate) {
+            currentDate = newDate
+        }
+    }
+    
+    private func getChartDateRange() -> ClosedRange<Date> {
+        switch selectedSegment {
+        case .daily:
+            let startDate = calendar.startOfDay(for: currentDate)
+            let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? currentDate
+            return startDate...endDate
+            
+        case .weekly:
+            let endDate = calendar.date(byAdding: .day, value: 7, to: weekStartDate) ?? currentDate
+            return weekStartDate...endDate
+            
+        case .monthly:
+            guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)),
+                  let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth),
+                  let endDate = calendar.date(byAdding: .day, value: 1, to: endOfMonth) else {
+                return currentDate...currentDate
+            }
+            return startOfMonth...endDate
+        }
+    }
+    
+    private func customXAxis() -> some AxisContent {
+        AxisMarks(preset: .aligned, values: .stride(by: selectedSegment.strideComponent)) { value in
+            if let date = value.as(Date.self) {
+                AxisGridLine()
+                AxisTick()
+                AxisValueLabel {
+                    Text(date, format: getAxisLabelFormat())
+                        .font(.caption)
+                }
+            }
+        }
+    }
+    
+    private func customYAxis() -> some AxisContent {
+        AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
+            AxisGridLine()
+            AxisTick()
+            AxisValueLabel {
+                if let doubleValue = value.as(Double.self) {
+                    Text(String(format: "%.1f GB", doubleValue))
+                        .font(.caption)
+                }
+            }
+        }
+    }
+    
+    private func selectedDataAnnotation(for date: Date) -> some View {
+        Group {
+            if let dataPoint = displayData.first(where: {
+                calendar.isDate($0.date, equalTo: date, toGranularity: selectedSegment.granularity)
+            }) {
+                VStack {
+                    Text(dataPoint.date, format: getDateFormat())
+                        .font(.caption)
+                    Text("WiFi: \(String(format: "%.2f GB", dataPoint.wifi))")
+                        .foregroundColor(.blue)
+                    Text("Mobile: \(String(format: "%.2f GB", dataPoint.wwan))")
+                        .foregroundColor(.orange)
+                }
+                .padding(8)
+                .background(Color(.systemBackground))
+                .cornerRadius(8)
+            }
         }
     }
     
     private var formattedDate: String {
         let formatter = DateFormatter()
         switch selectedSegment {
-        case "日":
+        case .daily:
             formatter.dateFormat = "yyyy年M月d日"
-        case "週":
+            return formatter.string(from: currentDate)
+            
+        case .weekly:
             formatter.dateFormat = "yyyy年M月d日"
-            let weekEnd = Calendar.current.date(byAdding: .day, value: 6, to: weekStartDate) ?? currentDate
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStartDate) ?? currentDate
             let endFormatter = DateFormatter()
             endFormatter.dateFormat = "d日"
             return "\(formatter.string(from: weekStartDate)) - \(endFormatter.string(from: weekEnd))"
-        case "月":
+            
+        case .monthly:
             formatter.dateFormat = "yyyy年M月"
-        default:
-            formatter.dateFormat = "yyyy年M月d日"
+            return formatter.string(from: currentDate)
         }
-        return formatter.string(from: currentDate)
     }
     
     private func getDateFormat() -> Date.FormatStyle {
         switch selectedSegment {
-        case "日":
+        case .daily:
             return .dateTime.hour()
-        case "週":
+        case .weekly:
             return .dateTime.weekday()
-        case "月":
-            return .dateTime.month().day()
-        default:
+        case .monthly:
             return .dateTime.month().day()
         }
     }
     
     private func getAxisLabelFormat() -> Date.FormatStyle {
         switch selectedSegment {
-        case "日":
+        case .daily:
             return .dateTime.hour()
-        case "週":
+        case .weekly:
             return .dateTime.weekday(.abbreviated)
-        case "月":
+        case .monthly:
             return .dateTime.day()
-        default:
-            return .dateTime.day()
-        }
-    }
-    
-    private func getStrideBy() -> Calendar.Component {
-        switch selectedSegment {
-        case "日":
-            return .hour
-        case "週", "月":
-            return .day
-        default:
-            return .day
-        }
-    }
-    
-    private func getGranularity() -> Calendar.Component {
-        switch selectedSegment {
-        case "日":
-            return .hour
-        case "週", "月":
-            return .day
-        default:
-            return .day
-        }
-    }
-    
-    private func getChartDateRange() -> ClosedRange<Date> {
-        let calendar = Calendar.current
-        switch selectedSegment {
-        case "日":
-            let startDate = calendar.startOfDay(for: currentDate)
-            let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? currentDate
-            return startDate...endDate
-        case "週":
-            let endDate = calendar.date(byAdding: .day, value: 7, to: weekStartDate) ?? currentDate
-            return weekStartDate...endDate
-        case "月":
-            let startDate = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) ?? currentDate
-            let endDate = calendar.date(byAdding: .month, value: 1, to: startDate) ?? currentDate
-            return startDate...endDate
-        default:
-            return currentDate...currentDate
         }
     }
 }
 
-// 統計カードビュー
+// MARK: - StatCard View
 struct StatCard: View {
     let title: String
     let value: String
@@ -340,12 +397,5 @@ struct StatCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(radius: 2)
         )
-    }
-}
-
-// Preview
-struct StatisticsView_Previews: PreviewProvider {
-    static var previews: some View {
-        StatisticsView()
     }
 }

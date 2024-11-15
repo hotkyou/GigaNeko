@@ -144,27 +144,38 @@ func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
     }
     
     let calendar = Calendar.current
+    
+    // 月の初日を取得
+    guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
+          let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+        return []
+    }
+    
     var dailyDataUsage: [DailyDataUsage] = []
     
-    // ClosedRangeをRangeに変換
-    if let dayRange = calendar.range(of: .day, in: .month, for: date) {
-        let range = dayRange.lowerBound..<dayRange.upperBound
-
-        for day in range {
-            let dailyData = dataUsageArray.filter { entry in
-                if let entryDate = entry["date"] as? Date,
-                   calendar.isDate(entryDate, equalTo: date, toGranularity: .month),
-                   calendar.component(.day, from: entryDate) == day {
-                    return true
-                }
-                return false
-            }
-            
-            let totalWifi = dailyData.reduce(0) { $0 + ($1["wifi"] as? UInt64 ?? 0) }
-            let totalWwan = dailyData.reduce(0) { $0 + ($1["wwan"] as? UInt64 ?? 0) }
-            
-            dailyDataUsage.append(DailyDataUsage(day: day, wifi: totalWifi, wwan: totalWwan))
+    // 月の全日数分のデータを生成
+    guard let daysInMonth = calendar.range(of: .day, in: .month, for: date)?.count else {
+        return []
+    }
+    
+    for day in 1...daysInMonth {
+        // その日の日付を生成
+        guard let currentDate = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) else {
+            continue
         }
+        
+        // その日のデータをフィルタリング
+        let dailyData = dataUsageArray.filter { entry in
+            guard let entryDate = entry["date"] as? Date else { return false }
+            return calendar.isDate(entryDate, inSameDayAs: currentDate)
+        }
+        
+        // データ使用量を集計
+        let totalWifi = dailyData.reduce(0) { $0 + ($1["wifi"] as? UInt64 ?? 0) }
+        let totalWwan = dailyData.reduce(0) { $0 + ($1["wwan"] as? UInt64 ?? 0) }
+        
+        // 1から始まる日付でデータを追加
+        dailyDataUsage.append(DailyDataUsage(day: day, wifi: totalWifi, wwan: totalWwan))
     }
     
     return dailyDataUsage
@@ -230,16 +241,3 @@ func launchTime() -> TimeInterval {
     //return dateFormatter.string(from: uptime)!
     return uptime
 }
-
-func getDayData() -> Int {
-    return 100
-}
-
-func getWeekData() -> Int {
-    return 100
-}
-
-func getMonthData() -> Int {
-    return 100
-}
-
