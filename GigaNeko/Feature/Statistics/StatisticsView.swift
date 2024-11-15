@@ -1,6 +1,6 @@
 import SwiftUI
-import Foundation
 import Charts
+import Foundation
 
 // MARK: - 列挙型と構造体
 enum TimeSegment: String, CaseIterable {
@@ -31,7 +31,6 @@ enum TimeSegment: String, CaseIterable {
     }
 }
 
-// MARK: - データポイント構造体
 struct DataPoint: Identifiable {
     let id = UUID()
     let date: Date
@@ -45,6 +44,7 @@ struct DataPoint: Identifiable {
 struct StatisticsView: View {
     // MARK: - Properties
     @State private var selectedSegment: TimeSegment = .daily
+    @State private var selectedTab: String = "グラフ"
     @State private var selectedDataPoint: Date?
     @State private var rawSelectedDate: Date?
     @State private var currentDate = Date()
@@ -79,131 +79,208 @@ struct StatisticsView: View {
     
     // MARK: - Body
     var body: some View {
-        NavigationView {
-            ZStack {
-                Color(.systemGroupedBackground).ignoresSafeArea()
-                
-                VStack(spacing: 20) {
-                    timeSelectionView
-                    statisticsCardsView
-                    chartView
-                }
-            }
-            .navigationTitle("データ使用量統計")
-        }
-        .onAppear { saveDataUsage() }
-    }
-    
-    // MARK: - Subviews
-    private var timeSelectionView: some View {
-        VStack {
-            Picker("期間", selection: $selectedSegment) {
-                ForEach(TimeSegment.allCases, id: \.self) { segment in
-                    Text(segment.rawValue).tag(segment)
-                }
-            }
-            .pickerStyle(SegmentedPickerStyle())
+        ZStack {
+            Image("StaticBackGround")
+                .edgesIgnoringSafeArea(.all)
             
-            dateNavigationView
-        }
-        .padding(.horizontal)
-    }
-    
-    private var dateNavigationView: some View {
-        HStack {
-            Button(action: { moveDate(by: -1) }) {
-                Image(systemName: "chevron.left")
-            }
-            
-            Text(formattedDate)
-                .font(.headline)
-            
-            Button(action: { moveDate(by: 1) }) {
-                Image(systemName: "chevron.right")
-            }
-        }
-    }
-    
-    private var statisticsCardsView: some View {
-        HStack(spacing: 15) {
-            StatCard(
-                title: "WiFi使用量",
-                value: String(format: "%.2f GB", statistics.totalWifi)
-            )
-            StatCard(
-                title: "モバイル使用量",
-                value: String(format: "%.2f GB", statistics.totalWwan)
-            )
-            StatCard(
-                title: "合計使用量",
-                value: String(format: "%.2f GB", statistics.totalWifi + statistics.totalWwan)
-            )
-        }
-        .padding(.horizontal)
-    }
-    
-    private var chartView: some View {
-        VStack(alignment: .leading) {
-            Text("使用量推移")
-                .font(.headline)
-                .padding(.leading)
-            
-            Chart {
-                ForEach(displayData) { item in
-                    LineMark(
-                        x: .value("Date", item.date),
-                        y: .value("WiFi", item.wifi)
-                    )
-                    .foregroundStyle(by: .value("Type", "WiFi"))
-                    .interpolationMethod(.linear)
-                    
-                    LineMark(
-                        x: .value("Date", item.date),
-                        y: .value("Mobile", item.wwan)
-                    )
-                    .foregroundStyle(by: .value("Type", "モバイル"))
-                    .interpolationMethod(.linear)
-                }
-                
-                if let selectedDate = rawSelectedDate {
-                    RuleMark(x: .value("Selected", selectedDate))
-                        .foregroundStyle(.gray.opacity(0.3))
-                        .annotation(position: .top) {
-                            selectedDataAnnotation(for: selectedDate)
+            VStack {
+                // タブ選択
+                HStack(spacing: 20) {
+                    Text("グラフ")
+                        .padding(.leading, 10)
+                        .padding(.horizontal, 14)
+                        .cornerRadius(8)
+                        .onTapGesture {
+                            selectedTab = "グラフ"
+                        }
+                    Text("りれき")
+                        .padding(.leading, 10)
+                        .cornerRadius(8)
+                        .onTapGesture {
+                            selectedTab = "りれき"
                         }
                 }
+                .padding(.top, 92)
+                .padding(.bottom, 20)
+                
+                if selectedTab == "グラフ" {
+                    // セグメントコントロール
+                    HStack(spacing: 20) {
+                        ForEach(TimeSegment.allCases, id: \.self) { segment in
+                            SegmentButton(
+                                title: segment.rawValue,
+                                isSelected: selectedSegment == segment
+                            ) {
+                                selectedSegment = segment
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(20)
+                    .padding(.bottom, 16)
+                    
+                    // グラフ部分
+                    VStack {
+                        Text(formattedDate)
+                            .font(.headline)
+                            .padding(.bottom, 16)
+                        
+                        Chart {
+                            ForEach(displayData) { item in
+                                LineMark(
+                                    x: .value("Date", item.date),
+                                    y: .value("WiFi", item.wifi)
+                                )
+                                .foregroundStyle(by: .value("Type", "WiFi"))
+                                .interpolationMethod(.linear)
+                                
+                                LineMark(
+                                    x: .value("Date", item.date),
+                                    y: .value("Mobile", item.wwan)
+                                )
+                                .foregroundStyle(by: .value("Type", "モバイル"))
+                                .interpolationMethod(.linear)
+                            }
+                            
+                            if let selectedDate = rawSelectedDate {
+                                RuleMark(x: .value("Selected", selectedDate))
+                                    .foregroundStyle(.gray.opacity(0.3))
+                                    .annotation(position: .top) {
+                                        selectedDataAnnotation(for: selectedDate)
+                                    }
+                            }
+                        }
+                        .chartForegroundStyleScale([
+                            "WiFi": .green,
+                            "モバイル": .orange
+                        ])
+                        .chartXScale(domain: getChartDateRange())
+                        .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
+                        .chartXAxis(content: customXAxis)
+                        .chartYAxis(content: customYAxis)
+                        .chartXSelection(value: $rawSelectedDate)
+                        .frame(height: 100)
+                        
+                        // 凡例
+                        HStack {
+                            HStack {
+                                Circle()
+                                    .fill(Color.orange)
+                                    .frame(width: 10, height: 10)
+                                Text("通信量")
+                                    .font(.caption)
+                            }
+                            .padding(.trailing)
+                            
+                            HStack {
+                                Circle()
+                                    .fill(Color.green)
+                                    .frame(width: 10, height: 10)
+                                Text("Wi-Fi")
+                                    .font(.caption)
+                            }
+                        }
+                        .padding(.top, 10)
+                    }
+                    .padding(.bottom)
+                    
+                    // 使用量サマリー
+                    VStack(spacing: 10) {
+                        HStack {
+                            Text(String(format: "%d/%d", calendar.component(.month, from: currentDate), calendar.component(.year, from: currentDate)))
+                                .font(.title3)
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Image(systemName: "person.fill")
+                                .resizable()
+                                .frame(width: 30, height: 30)
+                                .clipShape(Circle())
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal)
+                        
+                        HStack(spacing: 20) {
+                            UsageColumn(title: "使った通信量",
+                                      amount: String(format: "%.1f", statistics.totalWwan),
+                                      unit: "GB")
+                            UsageColumn(title: "残っている通信量",
+                                      amount: String(format: "%.1f", 7 - statistics.totalWwan),
+                                      unit: "GB")
+                            UsageColumn(title: "Wi-Fi",
+                                      amount: String(format: "%.1f", statistics.totalWifi),
+                                      unit: "GB")
+                        }
+                        .padding(.horizontal)
+                    }
+                    .padding()
+                    .background(Color(UIColor.systemGray6))
+                    .cornerRadius(20)
+                    .shadow(radius: 5)
+                    .frame(width: 250)
+                    
+                } else if selectedTab == "りれき" {
+                    // 履歴ビューの実装
+                    VStack(spacing: 20) {
+                        HStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.green.opacity(0.3))
+                                .frame(width: 5, height: 25)
+                            
+                            Text("りれき")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 60)
+                                .padding(.vertical, 5)
+                                .background(Color.green.opacity(0.3))
+                                .cornerRadius(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                        
+                        HStack {
+                            Text("日付")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Text("通信量")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                            Spacer()
+                            Text("取得ポイント")
+                                .font(.caption)
+                                .foregroundColor(.gray)
+                        }
+                        .padding(.horizontal)
+                        
+                        ForEach(displayData.prefix(5), id: \.id) { item in
+                            HStack {
+                                Text(item.date, format: .dateTime.year().month().day())
+                                Spacer()
+                                Text(String(format: "%.2f GB", item.total))
+                                Spacer()
+                                Text(String(Int(item.total * 100)))
+                            }
+                            .padding(.horizontal)
+                            .padding(.vertical, 8)
+                            
+                            Divider()
+                                .background(Color.gray.opacity(0.5))
+                                .padding(.horizontal)
+                        }
+                    }
+                    .padding()
+                    .cornerRadius(15)
+                    .shadow(radius: 5)
+                }
+                
+                Spacer()
             }
-            .chartForegroundStyleScale([
-                "WiFi": .blue,
-                "モバイル": .orange
-            ])
-            .chartXScale(domain: getChartDateRange())
-            .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
-            .chartXAxis(content: customXAxis)
-            .chartYAxis(content: customYAxis)
-            .chartXSelection(value: $rawSelectedDate)
-            .frame(height: 300)
-            .padding()
-            .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(Color(.systemBackground))
-                    .shadow(radius: 2)
-            )
-            
-            legendView
+            .padding(.leading, 64)
+            .padding(.trailing, 74)
+            .padding(.top, 30)
         }
-        .padding()
-    }
-    
-    private var legendView: some View {
-        HStack {
-            Label("WiFi", systemImage: "circle.fill")
-                .foregroundColor(.blue)
-            Spacer()
-            Label("モバイル", systemImage: "circle.fill")
-                .foregroundColor(.orange)
-        }
-        .padding(.horizontal)
     }
     
     // MARK: - Helper Methods
@@ -293,8 +370,25 @@ struct StatisticsView: View {
                 AxisGridLine()
                 AxisTick()
                 AxisValueLabel {
-                    Text(date, format: getAxisLabelFormat())
-                        .font(.caption)
+                    switch selectedSegment {
+                    case .daily:
+                        // 日次表示の場合、3時間おきに表示
+                        let hour = calendar.component(.hour, from: date)
+                        if hour % 3 == 0 {
+                            Text(date, format: .dateTime.hour())
+                                .font(.caption)
+                        }
+                    case .weekly:
+                        Text(date, format: .dateTime.weekday(.abbreviated))
+                            .font(.caption)
+                    case .monthly:
+                        // 月次表示の場合、5日おきに表示
+                        let day = calendar.component(.day, from: date)
+                        if day % 5 == 0 || day == 1 {
+                            Text("\(day)日")
+                                .font(.caption)
+                        }
+                    }
                 }
             }
         }
@@ -397,5 +491,45 @@ struct StatCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(radius: 2)
         )
+    }
+}
+
+struct SegmentButton: View {
+    let title: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(isSelected ? .white : .gray)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 15)
+                .background(isSelected ? Color.orange : Color.clear)
+                .cornerRadius(15)
+        }
+    }
+}
+
+struct UsageColumn: View {
+    let title: String
+    let amount: String
+    let unit: String
+    
+    var body: some View {
+        VStack(spacing: 5) {
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(.gray)
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
+                Text(amount)
+                    .font(.title)
+                    .fontWeight(.bold)
+                Text(unit)
+                    .font(.footnote)
+                    .foregroundColor(.gray)
+            }
+        }
     }
 }
