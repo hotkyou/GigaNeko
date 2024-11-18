@@ -120,12 +120,28 @@ struct StatisticsView: View {
                     .cornerRadius(20)
                     .padding(.bottom, 16)
                     
-                    // グラフ部分
-                    VStack {
+                    // 日付ナビゲーション
+                    HStack {
+                        NavigationButton(systemName: "chevron.left") {
+                            moveDate(by: -1)
+                        }
+                        
+                        Spacer()
+                        
                         Text(formattedDate)
                             .font(.headline)
-                            .padding(.bottom, 16)
                         
+                        Spacer()
+                        
+                        NavigationButton(systemName: "chevron.right") {
+                            moveDate(by: 1)
+                        }
+                    }
+                    .padding(.horizontal)
+                    .padding(.bottom, 16)
+                    
+                    // グラフ部分
+                    VStack {
                         Chart {
                             ForEach(displayData) { item in
                                 LineMark(
@@ -416,7 +432,7 @@ struct StatisticsView: View {
                     Text(dataPoint.date, format: getDateFormat())
                         .font(.caption)
                     Text("WiFi: \(String(format: "%.2f GB", dataPoint.wifi))")
-                        .foregroundColor(.blue)
+                        .foregroundColor(.green)
                     Text("Mobile: \(String(format: "%.2f GB", dataPoint.wwan))")
                         .foregroundColor(.orange)
                 }
@@ -530,6 +546,24 @@ struct UsageColumn: View {
                     .font(.footnote)
                     .foregroundColor(.gray)
             }
+        }
+    }
+}
+
+struct NavigationButton: View {
+    let systemName: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.orange)
+                .frame(width: 32, height: 32)
+                .background(
+                    Circle()
+                        .fill(Color.orange.opacity(0.2))
+                )
         }
     }
 }
