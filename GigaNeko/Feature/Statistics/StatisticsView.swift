@@ -51,6 +51,12 @@ struct StatisticsView: View {
     
     private let calendar = Calendar.current
     
+    private var monthTitle: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月"
+        return formatter.string(from: currentDate) + "の使用状況"
+    }
+    
     // MARK: - Computed Properties
     private var weekStartDate: Date {
         let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)
@@ -250,7 +256,7 @@ struct StatisticsView: View {
                                     .fill(Color.orange.opacity(0.3))
                                     .frame(width: 5, height: 18) // 高さを減少
                                 
-                                Text("今月の使用状況")
+                                Text(monthTitle)
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 40)
@@ -465,7 +471,14 @@ struct StatisticsView: View {
                     case .monthly:
                         let day = calendar.component(.day, from: date)
                         let isLastDayOfMonth = calendar.isDate(date, equalTo: getChartDateRange().upperBound, toGranularity: .day)
-                        return day % 5 == 0 || day == 1 || isLastDayOfMonth
+                        
+                        // 月末が30日または31日の場合の特別処理
+                        if day >= 30 {
+                            return isLastDayOfMonth  // 月末日のみ表示
+                        }
+                        
+                        // それ以外の日は5の倍数と1日を表示
+                        return day % 5 == 0 || day == 1
                     }
                 }()
                 

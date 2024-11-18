@@ -7,9 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		175F4FB12CC61DAF00E4E4FE /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB02CC61DAF00E4E4FE /* FirebaseAuth */; };
+		1702AFB72CE5DBFF00E25CD2 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 1702AFB62CE5DBFF00E25CD2 /* FirebaseAnalytics */; };
 		175F4FB32CC61DAF00E4E4FE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB22CC61DAF00E4E4FE /* FirebaseCore */; };
-		175F4FB52CC61DAF00E4E4FE /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB42CC61DAF00E4E4FE /* FirebaseDatabase */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -71,9 +70,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				175F4FB52CC61DAF00E4E4FE /* FirebaseDatabase in Frameworks */,
 				175F4FB32CC61DAF00E4E4FE /* FirebaseCore in Frameworks */,
-				175F4FB12CC61DAF00E4E4FE /* FirebaseAuth in Frameworks */,
+				1702AFB72CE5DBFF00E25CD2 /* FirebaseAnalytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -142,9 +140,8 @@
 			);
 			name = GigaNeko;
 			packageProductDependencies = (
-				175F4FB02CC61DAF00E4E4FE /* FirebaseAuth */,
 				175F4FB22CC61DAF00E4E4FE /* FirebaseCore */,
-				175F4FB42CC61DAF00E4E4FE /* FirebaseDatabase */,
+				1702AFB62CE5DBFF00E25CD2 /* FirebaseAnalytics */,
 			);
 			productName = GigaNeko;
 			productReference = 4773A5532CC0F01300CCD0B2 /* GigaNeko.app */;
@@ -432,7 +429,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -463,7 +460,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -611,20 +608,15 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		175F4FB02CC61DAF00E4E4FE /* FirebaseAuth */ = {
+		1702AFB62CE5DBFF00E25CD2 /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAuth;
+			productName = FirebaseAnalytics;
 		};
 		175F4FB22CC61DAF00E4E4FE /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
-		};
-		175F4FB42CC61DAF00E4E4FE /* FirebaseDatabase */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 175F4FAF2CC61DAF00E4E4FE /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseDatabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
