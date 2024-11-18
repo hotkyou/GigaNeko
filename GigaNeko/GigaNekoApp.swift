@@ -38,7 +38,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     // タスクのスケジュールを設定する関数
     func scheduleAppRefresh() {
         let request = BGAppRefreshTaskRequest(identifier: refreshTaskIdentifier)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: 45 * 60) // 最短で15分後に実行
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 50 * 60) // 最短で15分後に実行
         
         do {
             try BGTaskScheduler.shared.submit(request)

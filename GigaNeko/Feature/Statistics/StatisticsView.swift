@@ -77,6 +77,27 @@ struct StatisticsView: View {
         return (totalWifi, totalWwan, maxTotal)
     }
     
+    private var monthlyStatistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
+        // 現在の月の開始日を取得
+        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
+            return (0, 0, 0)
+        }
+        
+        // 月末日を取得
+        guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+            return (0, 0, 0)
+        }
+        
+        // 月間データを読み込む
+        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
+        
+        let totalWifi = monthlyData.reduce(0) { $0 + Double($1.wifi) / 1024 / 1024 / 1024 }
+        let totalWwan = monthlyData.reduce(0) { $0 + Double($1.wwan) / 1024 / 1024 / 1024 }
+        let maxTotal = monthlyData.map { Double($0.wifi + $0.wwan) / 1024 / 1024 / 1024 }.max() ?? 0
+        
+        return (totalWifi, totalWwan, maxTotal)
+    }
+    
     // MARK: - Body
     var body: some View {
         ZStack {
@@ -218,13 +239,13 @@ struct StatisticsView: View {
                         
                         HStack(spacing: 20) {
                             UsageColumn(title: "使った通信量",
-                                      amount: String(format: "%.1f", statistics.totalWwan),
+                                      amount: String(format: "%.1f", monthlyStatistics.totalWwan),
                                       unit: "GB")
                             UsageColumn(title: "残っている通信量",
-                                      amount: String(format: "%.1f", 7 - statistics.totalWwan),
+                                      amount: String(format: "%.1f", max(0, 7 - monthlyStatistics.totalWwan)),
                                       unit: "GB")
                             UsageColumn(title: "Wi-Fi",
-                                      amount: String(format: "%.1f", statistics.totalWifi),
+                                      amount: String(format: "%.1f", monthlyStatistics.totalWifi),
                                       unit: "GB")
                         }
                         .padding(.horizontal)
