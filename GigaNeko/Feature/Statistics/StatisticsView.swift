@@ -108,6 +108,8 @@ struct StatisticsView: View {
                 // タブ選択
                 HStack(spacing: 20) {
                     Text("グラフ")
+                        .font(.system(size: 16, weight: selectedTab == "グラフ" ? .bold : .regular))
+                        .foregroundColor(selectedTab == "グラフ" ? .primary : .gray)
                         .padding(.leading, 10)
                         .padding(.horizontal, 14)
                         .cornerRadius(8)
@@ -115,6 +117,8 @@ struct StatisticsView: View {
                             selectedTab = "グラフ"
                         }
                     Text("りれき")
+                        .font(.system(size: 16, weight: selectedTab == "りれき" ? .bold : .regular))
+                        .foregroundColor(selectedTab == "りれき" ? .primary : .gray)
                         .padding(.leading, 10)
                         .cornerRadius(8)
                         .onTapGesture {
@@ -125,156 +129,163 @@ struct StatisticsView: View {
                 .padding(.bottom, 20)
                 
                 if selectedTab == "グラフ" {
-                    // セグメントコントロール
-                    HStack(spacing: 20) {
-                        ForEach(TimeSegment.allCases, id: \.self) { segment in
-                            SegmentButton(
-                                title: segment.rawValue,
-                                isSelected: selectedSegment == segment
-                            ) {
-                                selectedSegment = segment
+                    VStack(spacing: 8) { // 全体のスペーシングを減少
+                        // グラフのヘッダー
+                        HStack {
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.orange.opacity(0.3))
+                                .frame(width: 5, height: 18) // 高さを減少
+                            
+                            Text("データ使用量")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 40)
+                                .padding(.vertical, 5) // パディングを減少
+                                .background(Color.orange.opacity(0.3))
+                                .cornerRadius(10)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .padding(.horizontal, 30) // パディングを調整して横幅を揃える
+                        
+                        // セグメントコントロール
+                        HStack(spacing: 20) {
+                            ForEach(TimeSegment.allCases, id: \.self) { segment in
+                                SegmentButton(
+                                    title: segment.rawValue,
+                                    isSelected: selectedSegment == segment
+                                ) {
+                                    selectedSegment = segment
+                                }
                             }
                         }
-                    }
-                    .padding()
-                    .background(Color(.systemGray6))
-                    .cornerRadius(20)
-                    .padding(.bottom, 16)
-                    
-                    // 日付ナビゲーション
-                    HStack {
-                        NavigationButton(systemName: "chevron.left") {
-                            moveDate(by: -1)
-                        }
+                        .padding(.horizontal, 10) // パディングを調整
+                        .padding(.vertical, 6) // パディングを減少
+                        .background(Color(.systemGray6))
+                        .cornerRadius(20)
                         
-                        Spacer()
-                        
-                        Text(formattedDate)
-                            .font(.headline)
-                        
-                        Spacer()
-                        
-                        NavigationButton(systemName: "chevron.right") {
-                            moveDate(by: 1)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 16)
-                    
-                    // グラフ部分
-                    VStack {
-                        Chart {
-                            ForEach(displayData) { item in
-                                LineMark(
-                                    x: .value("Date", item.date),
-                                    y: .value("WiFi", item.wifi)
-                                )
-                                .foregroundStyle(by: .value("Type", "WiFi"))
-                                .interpolationMethod(.linear)
-                                
-                                LineMark(
-                                    x: .value("Date", item.date),
-                                    y: .value("Mobile", item.wwan)
-                                )
-                                .foregroundStyle(by: .value("Type", "モバイル"))
-                                .interpolationMethod(.linear)
+                        // 日付ナビゲーション
+                        HStack {
+                            NavigationButton(systemName: "chevron.left") {
+                                moveDate(by: -1)
                             }
                             
-                            if let selectedDate = rawSelectedDate {
-                                RuleMark(x: .value("Selected", selectedDate))
-                                    .foregroundStyle(.gray.opacity(0.3))
-                                    .annotation(position: .top) {
-                                        selectedDataAnnotation(for: selectedDate)
-                                    }
-                            }
-                        }
-                        .chartForegroundStyleScale([
-                            "WiFi": .green,
-                            "モバイル": .orange
-                        ])
-                        .chartXScale(domain: getChartDateRange())
-                        .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
-                        .chartXAxis(content: customXAxis)
-                        .chartYAxis(content: customYAxis)
-                        .chartXSelection(value: $rawSelectedDate)
-                        .frame(height: 200)
-                    }
-                    .padding(.bottom)
-                    
-                    // 使用量サマリー
-                    VStack(spacing: 10) {
-                        HStack {
-                            Text(String(format: "%d/%d", calendar.component(.month, from: currentDate), calendar.component(.year, from: currentDate)))
-                                .font(.title3)
-                                .foregroundColor(.gray)
                             Spacer()
-                            Image(systemName: "person.fill")
-                                .resizable()
-                                .frame(width: 30, height: 30)
-                                .clipShape(Circle())
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.horizontal)
-                        
-                        HStack(spacing: 16) {
-                            HStack(spacing: 8) {
-                                VStack(alignment: .leading) {
-                                    Text("使った通信量")
-                                        .font(.footnote)
-                                        .foregroundColor(.gray)
-                                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                                        Text(String(format: "%.1f", monthlyStatistics.totalWwan))
-                                            .font(.title2)
-                                            .fontWeight(.bold)
-                                        Text("GB")
-                                            .font(.footnote)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 1, height: 30)
-                                
-                                VStack(alignment: .leading) {
-                                    Text("残っている通信量")
-                                        .font(.footnote)
-                                        .foregroundColor(.gray)
-                                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                                        Text(String(format: "%.1f", max(0, 7 - monthlyStatistics.totalWwan)))
-                                            .font(.title2)
-                                            .fontWeight(.bold)
-                                        Text("GB")
-                                            .font(.footnote)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
-                                
-                                Rectangle()
-                                    .fill(Color.gray.opacity(0.3))
-                                    .frame(width: 1, height: 30)
-                                
-                                VStack(alignment: .leading) {
-                                    Text("Wi-Fi")
-                                        .font(.footnote)
-                                        .foregroundColor(.gray)
-                                    HStack(alignment: .lastTextBaseline, spacing: 2) {
-                                        Text(String(format: "%.1f", monthlyStatistics.totalWifi))
-                                            .font(.title2)
-                                            .fontWeight(.bold)
-                                        Text("GB")
-                                            .font(.footnote)
-                                            .foregroundColor(.gray)
-                                    }
-                                }
+                            
+                            Text(formattedDate)
+                                .font(.headline)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                            
+                            NavigationButton(systemName: "chevron.right") {
+                                moveDate(by: 1)
                             }
                         }
-                        .padding(.horizontal)
+                        .padding(.horizontal, 12) // パディングを調整して横幅を揃える
+                        .padding(.vertical, 6) // パディングを減少
+                        .background(Color.orange.opacity(0.2))
+                        .cornerRadius(15)
+                        
+                        // グラフ部分
+                        VStack(spacing: 4) {
+                            Chart {
+                                ForEach(displayData) { item in
+                                    LineMark(
+                                        x: .value("Date", item.date),
+                                        y: .value("WiFi", item.wifi)
+                                    )
+                                    .foregroundStyle(by: .value("Type", "WiFi"))
+                                    .interpolationMethod(.linear)
+                                    
+                                    LineMark(
+                                        x: .value("Date", item.date),
+                                        y: .value("Mobile", item.wwan)
+                                    )
+                                    .foregroundStyle(by: .value("Type", "モバイル"))
+                                    .interpolationMethod(.linear)
+                                }
+                                
+                                if let selectedDate = rawSelectedDate {
+                                    RuleMark(x: .value("Selected", selectedDate))
+                                        .foregroundStyle(.gray.opacity(0.3))
+                                        .annotation(position: .top) {
+                                            selectedDataAnnotation(for: selectedDate)
+                                        }
+                                }
+                            }
+                            .chartForegroundStyleScale([
+                                "WiFi": Color.green,
+                                "モバイル": Color.orange
+                            ])
+                            .chartLegend(position: .bottom, alignment: .center)
+                            .chartXScale(domain: getChartDateRange())
+                            .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
+                            .chartXAxis(content: customXAxis)
+                            .chartYAxis(content: customYAxis)
+                            .chartXSelection(value: $rawSelectedDate)
+                            .frame(height: 200)
+                            .padding(6)
+                            .background(Color(.systemGray6))
+                            .cornerRadius(15)
+                        }
+                        .padding(.vertical, 4)
+                        // スワイプジェスチャーを追加
+                        .gesture(
+                            DragGesture()
+                                .onEnded { value in
+                                    let threshold: CGFloat = 50 // スワイプを検知する閾値
+                                    if value.translation.width > threshold {
+                                        // 右にスワイプ -> 前の日付へ
+                                        moveDate(by: -1)
+                                    } else if value.translation.width < -threshold {
+                                        // 左にスワイプ -> 次の日付へ
+                                        moveDate(by: 1)
+                                    }
+                                }
+                        )
+                        // 使用量サマリー
+                        VStack(spacing: 4) { // スペーシングを減少
+                            HStack {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.orange.opacity(0.3))
+                                    .frame(width: 5, height: 18) // 高さを減少
+                                
+                                Text("今月の使用状況")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 40)
+                                    .padding(.vertical, 3) // パディングを減少
+                                    .background(Color.orange.opacity(0.3))
+                                    .cornerRadius(10)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .padding(.horizontal, 12) // パディングを調整して横幅を揃える
+                            
+                            VStack(spacing: 4) { // スペーシングを減少
+                                VerticalSummaryCard(
+                                    title: "使った通信量",
+                                    value: String(format: "%.1f GB", monthlyStatistics.totalWwan),
+                                    color: .orange
+                                )
+                                
+                                VerticalSummaryCard(
+                                    title: "残っている通信量",
+                                    value: String(format: "%.1f GB", max(0, 7 - monthlyStatistics.totalWwan)),
+                                    color: .orange
+                                )
+                                
+                                VerticalSummaryCard(
+                                    title: "Wi-Fi使用量",
+                                    value: String(format: "%.1f GB", monthlyStatistics.totalWifi),
+                                    color: .green
+                                )
+                            }
+                            .padding(.horizontal, 12) // パディングを調整して横幅を揃える
+                        }
+                        .padding(6) // パディングを減少
+                        .background(Color(.systemGray6))
+                        .cornerRadius(20)
                     }
-                    .padding()
-                    .background(Color(UIColor.systemGray6))
-                    .cornerRadius(20)
-                    .shadow(radius: 5)
                     
                 } else if selectedTab == "りれき" {
                     // 履歴ビューの実装
@@ -618,5 +629,33 @@ struct NavigationButton: View {
                         .fill(Color.orange.opacity(0.2))
                 )
         }
+    }
+}
+
+struct VerticalSummaryCard: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.footnote) // subheadlineからfootnoteに変更してより小さく
+                .foregroundColor(.gray)
+            
+            Spacer()
+            
+            Text(value)
+                .font(.callout) // title3からcalloutに変更してより小さく
+                .fontWeight(.bold)
+                .foregroundColor(color)
+        }
+        .padding(.horizontal, 12) // 16から12に減少
+        .padding(.vertical, 8) // 12から8に減少
+        .background(
+            RoundedRectangle(cornerRadius: 10) // 12から10に減少
+                .fill(Color(.systemBackground))
+                .shadow(radius: 1) // 2から1に減少してより軽い見た目に
+        )
     }
 }
