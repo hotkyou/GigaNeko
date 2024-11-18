@@ -197,28 +197,7 @@ struct StatisticsView: View {
                         .chartXAxis(content: customXAxis)
                         .chartYAxis(content: customYAxis)
                         .chartXSelection(value: $rawSelectedDate)
-                        .frame(height: 100)
-                        
-                        // 凡例
-                        HStack {
-                            HStack {
-                                Circle()
-                                    .fill(Color.orange)
-                                    .frame(width: 10, height: 10)
-                                Text("通信量")
-                                    .font(.caption)
-                            }
-                            .padding(.trailing)
-                            
-                            HStack {
-                                Circle()
-                                    .fill(Color.green)
-                                    .frame(width: 10, height: 10)
-                                Text("Wi-Fi")
-                                    .font(.caption)
-                            }
-                        }
-                        .padding(.top, 10)
+                        .frame(height: 200)
                     }
                     .padding(.bottom)
                     
@@ -237,16 +216,58 @@ struct StatisticsView: View {
                         }
                         .padding(.horizontal)
                         
-                        HStack(spacing: 20) {
-                            UsageColumn(title: "使った通信量",
-                                      amount: String(format: "%.1f", monthlyStatistics.totalWwan),
-                                      unit: "GB")
-                            UsageColumn(title: "残っている通信量",
-                                      amount: String(format: "%.1f", max(0, 7 - monthlyStatistics.totalWwan)),
-                                      unit: "GB")
-                            UsageColumn(title: "Wi-Fi",
-                                      amount: String(format: "%.1f", monthlyStatistics.totalWifi),
-                                      unit: "GB")
+                        HStack(spacing: 16) {
+                            HStack(spacing: 8) {
+                                VStack(alignment: .leading) {
+                                    Text("使った通信量")
+                                        .font(.footnote)
+                                        .foregroundColor(.gray)
+                                    HStack(alignment: .lastTextBaseline, spacing: 2) {
+                                        Text(String(format: "%.1f", monthlyStatistics.totalWwan))
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                        Text("GB")
+                                            .font(.footnote)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 1, height: 30)
+                                
+                                VStack(alignment: .leading) {
+                                    Text("残っている通信量")
+                                        .font(.footnote)
+                                        .foregroundColor(.gray)
+                                    HStack(alignment: .lastTextBaseline, spacing: 2) {
+                                        Text(String(format: "%.1f", max(0, 7 - monthlyStatistics.totalWwan)))
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                        Text("GB")
+                                            .font(.footnote)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                                
+                                Rectangle()
+                                    .fill(Color.gray.opacity(0.3))
+                                    .frame(width: 1, height: 30)
+                                
+                                VStack(alignment: .leading) {
+                                    Text("Wi-Fi")
+                                        .font(.footnote)
+                                        .foregroundColor(.gray)
+                                    HStack(alignment: .lastTextBaseline, spacing: 2) {
+                                        Text(String(format: "%.1f", monthlyStatistics.totalWifi))
+                                            .font(.title2)
+                                            .fontWeight(.bold)
+                                        Text("GB")
+                                            .font(.footnote)
+                                            .foregroundColor(.gray)
+                                    }
+                                }
+                            }
                         }
                         .padding(.horizontal)
                     }
@@ -254,7 +275,6 @@ struct StatisticsView: View {
                     .background(Color(UIColor.systemGray6))
                     .cornerRadius(20)
                     .shadow(radius: 5)
-                    .frame(width: 250)
                     
                 } else if selectedTab == "りれき" {
                     // 履歴ビューの実装
@@ -332,9 +352,10 @@ struct StatisticsView: View {
             )
         }
     }
-    
+
     private func loadWeeklyData() -> [DataPoint] {
         let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
+        // 日曜日から土曜日までの7日間のデータを生成
         return weeklyData.map { usage in
             let date = calendar.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
             return DataPoint(
@@ -384,48 +405,81 @@ struct StatisticsView: View {
         switch selectedSegment {
         case .daily:
             let startDate = calendar.startOfDay(for: currentDate)
-            let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) ?? currentDate
+            // 終了日を次の日の00:00に設定（24時間表示のため）
+            guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) else {
+                return startDate...startDate
+            }
             return startDate...endDate
             
         case .weekly:
-            let endDate = calendar.date(byAdding: .day, value: 7, to: weekStartDate) ?? currentDate
-            return weekStartDate...endDate
+            // 週の開始日（日曜日）
+            let startDate = weekStartDate
+            // 週の終了日（土曜日の終わり）
+            guard let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) else {
+                return startDate...startDate
+            }
+            // 土曜日の23:59:59まで表示
+            guard let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate) else {
+                return startDate...startDate
+            }
+            return startDate...endOfDay
             
         case .monthly:
-            guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)),
-                  let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth),
-                  let endDate = calendar.date(byAdding: .day, value: 1, to: endOfMonth) else {
+            guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
                 return currentDate...currentDate
             }
-            return startOfMonth...endDate
+            // 月の最終日を取得
+            guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+                return startOfMonth...startOfMonth
+            }
+            // 月末の23:59:59まで表示
+            guard let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfMonth) else {
+                return startOfMonth...startOfMonth
+            }
+            return startOfMonth...endOfDay
         }
     }
-    
+
     private func customXAxis() -> some AxisContent {
         AxisMarks(preset: .aligned, values: .stride(by: selectedSegment.strideComponent)) { value in
             if let date = value.as(Date.self) {
-                AxisGridLine()
-                AxisTick()
-                AxisValueLabel {
+                let shouldShowLabel: Bool = {
                     switch selectedSegment {
                     case .daily:
-                        // 日次表示の場合、3時間おきに表示
                         let hour = calendar.component(.hour, from: date)
-                        if hour % 3 == 0 {
-                            Text(date, format: .dateTime.hour())
-                                .font(.caption)
-                        }
+                        return hour % 3 == 0
                     case .weekly:
-                        Text(date, format: .dateTime.weekday(.abbreviated))
-                            .font(.caption)
+                        let weekday = calendar.component(.weekday, from: date)
+                        return weekday >= 1 && weekday <= 7
                     case .monthly:
-                        // 月次表示の場合、5日おきに表示
                         let day = calendar.component(.day, from: date)
-                        if day % 5 == 0 || day == 1 {
-                            Text("\(day)日")
+                        let isLastDayOfMonth = calendar.isDate(date, equalTo: getChartDateRange().upperBound, toGranularity: .day)
+                        return day % 5 == 0 || day == 1 || isLastDayOfMonth
+                    }
+                }()
+                
+                if shouldShowLabel {
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1))
+                        .foregroundStyle(Color.gray.opacity(0.5))
+                    AxisTick(stroke: StrokeStyle(lineWidth: 1.5))
+                    AxisValueLabel {
+                        switch selectedSegment {
+                        case .daily:
+                            let hour = calendar.component(.hour, from: date)
+                            Text("\(hour)")
+                                .font(.caption)
+                        case .weekly:
+                            Text(date, format: .dateTime.weekday(.abbreviated))
+                                .font(.caption)
+                        case .monthly:
+                            let day = calendar.component(.day, from: date)
+                            Text("\(day)")
                                 .font(.caption)
                         }
                     }
+                } else {
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(Color.gray.opacity(0.2))
                 }
             }
         }
@@ -545,28 +599,6 @@ struct SegmentButton: View {
                 .padding(.horizontal, 15)
                 .background(isSelected ? Color.orange : Color.clear)
                 .cornerRadius(15)
-        }
-    }
-}
-
-struct UsageColumn: View {
-    let title: String
-    let amount: String
-    let unit: String
-    
-    var body: some View {
-        VStack(spacing: 5) {
-            Text(title)
-                .font(.footnote)
-                .foregroundColor(.gray)
-            HStack(alignment: .lastTextBaseline, spacing: 2) {
-                Text(amount)
-                    .font(.title)
-                    .fontWeight(.bold)
-                Text(unit)
-                    .font(.footnote)
-                    .foregroundColor(.gray)
-            }
         }
     }
 }
