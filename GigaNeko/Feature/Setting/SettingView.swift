@@ -17,20 +17,6 @@ struct SettingView: View {
                 .edgesIgnoringSafeArea(.all)
             
             VStack{
-                // プロフィール画面
-                HStack{
-                    Spacer()
-                    
-                    VStack{
-                        Circle()
-                            .frame(width: 100,height: 100)
-                        Text("名前")
-                    }
-                    
-                    Spacer()
-                }.padding(.bottom,20)
-                
-                
                 VStack{
                     // Handle at the top
                     RoundedRectangle(cornerRadius: 2)
@@ -38,77 +24,114 @@ struct SettingView: View {
                         .frame(width: 90, height: 5)
                     
                     VStack{
-                        HStack {
-                            Text("設定")
-                                .foregroundColor(.black)
-                                .font(.system(size: 30)) // Increase font size for larger text
-                                .padding(.leading)
-                            
-                            Spacer()
-                            
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                            
-                            
+                        
+                        Text("設定画面")
+                            .font(.title)
+                        
+                        Link(destination: URL(string: "https://apps.apple.com/jp/app/id6553989978?action=write-review")!) {
+                            HStack {
+                                Image(systemName: "pencil")
+                                    .foregroundColor(.primary)
+                                    .font(.system(size: 30))
+                                Text("レビューを書く")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 30)) // Increase font size for larger text
+                                    .padding(.leading,2)
+                                
+                                Spacer()
+                                
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding()
                         .frame(height: 60) // Set height for each row
                         .background(Color.white)
                         .cornerRadius(10)
                         
-                        HStack {
-                            Text("設定")
-                                .foregroundColor(.black)
-                                .font(.system(size: 30)) // Increase font size for larger text
-                                .padding(.leading)
-                            
-                            Spacer()
-                            
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                            
-                            
+                        ShareLink(item: URL(string: "https://apps.apple.com/us/app/japan-travel-yokoso/id6553989978")!) {
+                            HStack {
+                                Image(systemName: "square.and.arrow.up")
+                                    .foregroundColor(.primary)
+                                    .font(.system(size: 30))
+                                
+                                Text("アプリをシェアする")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 30)) // Increase font size for larger text
+                                    .padding(.leading,2)
+                                Spacer()
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding()
                         .frame(height: 60) // Set height for each row
                         .background(Color.white)
                         .cornerRadius(10)
                         
-                        HStack {
-                            Text("設定")
-                                .foregroundColor(.black)
-                                .font(.system(size: 30)) // Increase font size for larger text
-                                .padding(.leading)
-                            Spacer()
-                            
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                            
-                            
+                        NavigationLink(destination: TermsView()) {
+                            HStack {
+                                Image(systemName: "exclamationmark.lock")
+                                    .foregroundColor(.primary)
+                                    .font(.system(size: 30))
+                                
+                                Text("利用規約")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 30)) // Increase font size for larger text
+                                    .padding(.leading,2)
+                                
+                                Spacer()
+                                
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding()
                         .frame(height: 60) // Set height for each row
                         .background(Color.white)
                         .cornerRadius(10)
                         
-                        HStack {
-                            Text("設定")
-                                .foregroundColor(.black)
-                                .font(.system(size: 30)) // Increase font size for larger text
-                                .padding(.leading)
-                            
-                            Spacer()
-                            
-                            
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(.gray)
-                            
-                            
-                            
-                            
+                        NavigationLink(destination: PrivacyPolicyView()) {
+                            HStack {
+                                Image(systemName: "hand.raised")
+                                    .foregroundColor(.primary)
+                                    .font(.system(size: 30))
+                                
+                                Text("プライパシーポリシー")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 30)) // Increase font size for larger text
+                                    .padding(.leading,2)
+                                
+                                Spacer()
+                                
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
+                        }
+                        .padding()
+                        .frame(height: 60) // Set height for each row
+                        .background(Color.white)
+                        .cornerRadius(10)
+                        NavigationLink(destination: SettingGift()) {
+                            HStack {
+                                Image(systemName: "gift.fill")
+                                    .foregroundColor(.primary)
+                                    .font(.system(size: 30))
+                                
+                                Text("エンジニアに寄付")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 30)) // Increase font size for larger text
+                                    .padding(.leading,2)
+                                Spacer()
+                                
+                                
+                                Image(systemName: "chevron.right")
+                                    .foregroundColor(.gray)
+                            }
                         }
                         .padding()
                         .frame(height: 60) // Set height for each row
@@ -116,24 +139,22 @@ struct SettingView: View {
                         .cornerRadius(10)
                         
                         Toggle(isOn: $toggleState1) {
-                            Text("設定")
-                                .font(.system(size: 30))
-                                .padding(.leading,30)
+                            HStack{
+                                Image(systemName: "bell.fill")
+                                    .foregroundColor(.black)
+                                    .font(.system(size: 30))
+                                    .padding(.leading,20)
+                                
+                                Text("通知")
+                                    .font(.system(size: 30))
+                                    .padding(.leading,2)
+                            }
                         }
-                        .toggleStyle(SwitchToggleStyle(tint: Color.gray))
+                        .toggleStyle(SwitchToggleStyle(tint: Color.orange))
                         .padding(.bottom,10)
                         .padding(.trailing,10)
                         
-                        Toggle(isOn: $toggleState2) {
-                            Text("設定")
-                                .font(.system(size: 30))
-                                .padding(.leading,30)
-                        }
-                        .toggleStyle(SwitchToggleStyle(tint: Color.yellow))
-                        .padding(.trailing,10)
                     }
-                    
-        
                     Spacer()
                 }
                 
