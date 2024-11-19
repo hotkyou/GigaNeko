@@ -110,9 +110,11 @@ struct StatisticsView: View {
             Image("StaticBackGround")
                 .edgesIgnoringSafeArea(.all)
             
-            VStack {
-                // タブ選択
-                HStack(spacing: 20) {
+            // FUCK: 画面遷移した時に謎に下にいくから調整
+            // 原因は画面遷移した時のBackが邪魔で
+            // ごめんなせえ
+            VStack{
+                HStack(spacing: 20){
                     Text("グラフ")
                         .font(.system(size: 16, weight: selectedTab == "グラフ" ? .bold : .regular))
                         .foregroundColor(selectedTab == "グラフ" ? .primary : .gray)

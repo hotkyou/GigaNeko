@@ -17,130 +17,99 @@ struct ShopView: View {
     ]
     
     let columns = [
-        GridItem(.flexible(minimum: 120)), // カラム幅を固定
+        GridItem(.flexible(minimum: 120)),
         GridItem(.flexible(minimum: 120)),
         GridItem(.flexible(minimum: 120))
     ]
+    
     var body: some View {
-        ZStack{
-            //カラーストップのグラデーション
+        ZStack {
             Image("Background")
+                .resizable()
                 .edgesIgnoringSafeArea(.all)
             
             VStack {
-                HStack{
+                HStack {
                     Spacer()
-                    
-                    HStack{
+                    HStack {
                         RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3)) // グレーの背景
-                            .frame(width: 30, height: 30) // サイズ調整
-                            .padding(.leading, 10) // 左側に少し余白
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 30, height: 30)
+                            .padding(.leading, 10)
                         
                         Text("3600")
-                            .font(.system(size: 24, weight: .medium)) // フォントサイズとスタイル
-                            .foregroundColor(.gray) // 文字色
+                            .font(.system(size: 24, weight: .medium))
+                            .foregroundColor(.gray)
                             .padding(.horizontal, 10)
                     }
-                    .frame(height: 50) // 全体の高さを設定
-                    .background(Color(.white))
-                    .cornerRadius(12) // 全体の角丸
-                    .padding() // 全体に少し余白
-                } // HStack
+                    .frame(height: 50)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding()
+                }
                 
-                VStack{
-                    HStack(spacing: 20){
-                        Text("えさ")
-                        Text("おもちゃ")
-                        Text("プレゼント")
-                        Text("ポイント")
-                    }.padding()
-                    
-                    ScrollView {
-                        HStack {
-                            Divider()
-                                .frame(width: 150, height: 1) // 左側の線の幅を指定
-                                .background(Color.gray) // 線の色を設定
-                            
-                            Text("えさ")
-                                .padding(.horizontal, 8) // テキストの左右に余白を追加
-                            
-                            Divider()
-                                .frame(width: 150, height: 1) // 右側の線の幅を指定
-                                .background(Color.gray)
-                        }
-
-
-                        
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(products, id: \.0) { product in
-                                ProductView(productName: product.0, productPrice: product.1)
+                VStack {
+                    ScrollViewReader { proxy in
+                        HStack(spacing: 20) {
+                            Button("えさ") {
+                                withAnimation(.easeInOut) {
+                                    proxy.scrollTo("えさ", anchor: .top)
+                                }
+                            }
+                            Button("おもちゃ") {
+                                withAnimation(.easeInOut) {
+                                    proxy.scrollTo("おもちゃ", anchor: .top)
+                                }
+                            }
+                            Button("プレゼント") {
+                                withAnimation(.easeInOut) {
+                                    proxy.scrollTo("プレゼント", anchor: .top)
+                                }
+                            }
+                            Button("ポイント") {
+                                withAnimation(.easeInOut) {
+                                    proxy.scrollTo("ポイント", anchor: .top)
+                                }
                             }
                         }
+                        .padding()
                         
-                        HStack {
-                            Divider()
-                                .frame(width: 125, height: 1) // 左側の線の幅を指定
-                                .background(Color.gray) // 線の色を設定
-                            
-                            Text("おもちゃ")
-                                .padding(.horizontal, 8) // テキストの左右に余白を追加
-                            
-                            Divider()
-                                .frame(width: 125, height: 1) // 右側の線の幅を指定
-                                .background(Color.gray)
-                        }
-                        
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(products, id: \.0) { product in
-                                ProductView(productName: product.0, productPrice: product.1)
-                            }
-                        }
-                        
-                        HStack {
-                            Divider()
-                                .frame(width: 120, height: 1) // 左側の線の幅を指定
-                                .background(Color.gray) // 線の色を設定
-                            
-                            Text("プレゼント")
-                                .padding(.horizontal, 8) // テキストの左右に余白を追加
-                            
-                            Divider()
-                                .frame(width: 120, height: 1) // 右側の線の幅を指定
-                                .background(Color.gray)
-                        }
-                        
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(products, id: \.0) { product in
-                                ProductView(productName: product.0, productPrice: product.1)
-                            }
-                        }
-                        
-                        HStack {
-                            Divider()
-                                .frame(width: 125, height: 1) // 左側の線の幅を指定
-                                .background(Color.gray) // 線の色を設定
-                            
-                            Text("ポイント")
-                                .padding(.horizontal, 8) // テキストの左右に余白を追加
-                            
-                            Divider()
-                                .frame(width: 125, height: 1) // 右側の線の幅を指定
-                                .background(Color.gray)
-                        }
-                        
-                        LazyVGrid(columns: columns, spacing: 20) {
-                            ForEach(products, id: \.0) { product in
-                                ProductView(productName: product.0, productPrice: product.1)
+                        ScrollView {
+                            Group {
+                                SectionHeader(title: "えさ", id: "えさ")
+                                ProductGrid(products: products, columns: columns)
+                                
+                                SectionHeader(title: "おもちゃ", id: "おもちゃ")
+                                ProductGrid(products: products, columns: columns)
+                                
+                                SectionHeader(title: "プレゼント", id: "プレゼント")
+                                ProductGrid(products: products, columns: columns)
+                                
+                                SectionHeader(title: "ポイント", id: "ポイント")
+                                ProductGrid(products: products, columns: columns)
                             }
                         }
                     }
                 }
                 .background(Color.white)
-                .cornerRadius(10) // 全体の角丸
+                .cornerRadius(10)
                 
-            }.padding(.horizontal,64) // VStack
-        }// Zstack
+            }.padding(.horizontal, 64)
+        }
+    }
+}
+
+struct SectionHeader: View {
+    let title: String
+    let id: String
+    
+    var body: some View {
+        HStack {
+            Divider().frame(width: 120, height: 1).background(Color.gray)
+            Text(title).padding(.horizontal, 8)
+            Divider().frame(width: 120, height: 1).background(Color.gray)
+        }
+        .id(id)
     }
 }
 
