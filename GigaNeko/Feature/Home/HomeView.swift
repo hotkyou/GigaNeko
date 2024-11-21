@@ -5,6 +5,12 @@ struct HomeView: View {
     @State private var movingDown = true
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     
+    // スタミナとストレス値
+    @State private var stamina: Double = 80
+    @State private var stress: Double = 15
+    @State private var staminatimer: Timer?
+    @AppStorage("lastActiveDate") private var lastActiveDate: Date = Date()
+
     var body: some View {
         NavigationView { // NavigationViewで全体をラップ
             GeometryReader { geometry in
@@ -60,17 +66,20 @@ struct HomeView: View {
                                     .cornerRadius(20)
                                 
                                 HStack {
+                                    // 小数点切り捨て
+                                    let truncatedStamina = floor(stamina)
                                     Spacer()
                                     Image("Stamina")
                                         .resizable()
                                         .frame(width: 20, height: 20)
                                         .offset(x: 0, y: 0)
                                     VStack(alignment: .leading) {
-                                        Text("あと 12:40")
+                                        Text("スタミナ値: \(Int(truncatedStamina))")
                                             .foregroundColor(.gray)
                                             .font(.system(size: 9))
-                                        ProgressView(value: 0.5)
-                                            .scaleEffect(x: 1, y: 2)
+                                        ProgressView(value: stamina / 100) // 0.0〜1.0に変換
+                                            .scaleEffect(x: 1, y: 2) // 高さを増やす
+                                          
                                     }
                                     Spacer()
                                     Divider()
@@ -82,8 +91,9 @@ struct HomeView: View {
                                         Text("ストレス値")
                                             .foregroundColor(.gray)
                                             .font(.system(size: 9))
-                                        ProgressView(value: 0.5)
+                                        ProgressView(value: stress / 100) // 0.0〜1.0に変換
                                             .scaleEffect(x: 1, y: 2)
+                                      
                                     }
                                     Spacer()
                                 }
@@ -165,6 +175,42 @@ struct HomeView: View {
             }
             .edgesIgnoringSafeArea(.all)
         } // NavigationView
+        .onAppear {
+            startTimer()
+            updateStaminaFromBackground()
+        }
+        .onDisappear {
+            saveLastActiveDate()
+        }
+    }
+    // Timerを開始
+    private func startTimer() {
+        // 3分ごとにスタミナが減っていく処理
+        staminatimer = Timer.scheduledTimer(withTimeInterval: 180, repeats: true) { _ in
+            withAnimation {
+                if stamina > 0 {
+                    stamina -= 1
+                }
+            }
+        }
+    }
+    // バックグラウンドから復帰したときにスタミナを更新
+    private func updateStaminaFromBackground() {
+        let currentDate = Date()
+        let elapsedTime = currentDate.timeIntervalSince(lastActiveDate) // 経過時間 (秒)
+        
+        let staminaToReduce = Int(elapsedTime / 180) // 3分ごとに1減少
+        if staminaToReduce > 0 {
+            stamina = max(0, stamina - Double(staminaToReduce)) // スタミナが0未満にならないように
+        }
+        
+        // タイムスタンプを現在時刻に更新
+        lastActiveDate = currentDate
+    }
+    
+    // アプリが閉じられる際にタイムスタンプを保存
+    private func saveLastActiveDate() {
+        lastActiveDate = Date()
     }
 }
 
