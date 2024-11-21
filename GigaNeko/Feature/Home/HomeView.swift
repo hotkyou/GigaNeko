@@ -6,7 +6,7 @@ struct HomeView: View {
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     
     var body: some View {
-        NavigationView { // NavigationViewで全体をラップ
+        NavigationStack { // NavigationViewで全体をラップ
             GeometryReader { geometry in
                 ScrollView(.horizontal, showsIndicators: false) {
                     Image("HomeBackGroundImage")

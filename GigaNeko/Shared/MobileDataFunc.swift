@@ -47,8 +47,16 @@ func saveDataUsage() {
         print("通常起動")
         // 通常起動時の処理（差分計算）
         print(previousWifi, previousWwan)
-        wifiDifference = currentWifi - previousWifi
-        wwanDifference = currentWwan - previousWwan
+        if currentWifi >= previousWifi && currentWwan >= previousWwan {
+            // 両方のカウンターが正常な場合
+            wifiDifference = currentWifi - previousWifi
+            wwanDifference = currentWwan - previousWwan
+        } else {
+            // 何らかのタイミングでリセットされた場合
+            print("カウンターリセット検出")
+            wifiDifference = currentWifi
+            wwanDifference = currentWwan
+        }
     }
     
     // 差DBに入れるためのデータ
@@ -180,45 +188,6 @@ func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
     
     return dailyDataUsage
 }
-
-//func loadSavedDataUsage(for period: Calendar.Component? = nil) -> SavedDataUsage {
-//    // UserDefaultsから保存されたデータを取得
-//    guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
-//        return SavedDataUsage(wifi: 0, wwan: 0, launchtime: 0)
-//    }
-//    
-//    let launchtime = UserDefaults.standard.object(forKey: "launchtime") as? TimeInterval ?? 0
-//    let calendar = Calendar.current
-//    let currentDate = Date()
-//    
-//    var totalWifiUsage: UInt64 = 0
-//    var totalWwanUsage: UInt64 = 0
-//    
-//    for entry in dataUsageArray {
-//        if let wifi = entry["wifi"] as? UInt64,
-//           let wwan = entry["wwan"] as? UInt64,
-//           let date = entry["date"] as? Date {
-//            
-//            // 日、月、年ごとのフィルタリング
-//            if let period = period {
-//                let isInSamePeriod = calendar.isDate(date, equalTo: currentDate, toGranularity: period)
-//                if !isInSamePeriod { continue }
-//            }
-//            
-//            // Wi-FiとWWANのデータ使用量を合計
-//            totalWifiUsage += wifi
-//            totalWwanUsage += wwan
-//        }
-//    }
-//    
-//    // 合計したデータ量を表示
-//    print("総WiFi使用量: \(totalWifiUsage) bytes")
-//    print("総WWAN使用量: \(totalWwanUsage) bytes")
-//    
-//    // 合計データ量を持つSavedDataUsage構造体を返す
-//    return SavedDataUsage(wifi: totalWifiUsage, wwan: totalWwanUsage, launchtime: launchtime)
-//}
-
 
 func resetData() {
     let Wifi: UInt64 = 0
