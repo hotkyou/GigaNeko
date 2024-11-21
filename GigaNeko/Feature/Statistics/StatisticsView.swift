@@ -22,13 +22,6 @@ enum TimeSegment: String, CaseIterable {
         case .weekly, .monthly: return .day
         }
     }
-    
-    var granularity: Calendar.Component {
-        switch self {
-        case .daily: return .hour
-        case .weekly, .monthly: return .day
-        }
-    }
 }
 
 struct DataPoint: Identifiable {
@@ -45,9 +38,10 @@ struct StatisticsView: View {
     // MARK: - Properties
     @State private var selectedSegment: TimeSegment = .daily
     @State private var selectedTab: String = "グラフ"
-    @State private var selectedDataPoint: Date?
-    @State private var rawSelectedDate: Date?
     @State private var currentDate = Date()
+    @State private var selectedDataPoint: DataPoint?
+    @State private var selectedLocation: CGPoint = .zero
+    @State private var isDragging: Bool = false
     
     private let calendar = Calendar.current
     
@@ -75,7 +69,16 @@ struct StatisticsView: View {
     }
     
     private var statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
-        let relevantData = filterDataForCurrentPeriod()
+        var relevantData: [DataPoint]
+        switch selectedSegment {
+        case .daily:
+            relevantData = loadHourlyData()
+        case .weekly:
+            relevantData = loadWeeklyData()
+        case .monthly:
+            relevantData = loadMonthlyData()
+        }
+        
         let totalWifi = relevantData.reduce(0) { $0 + $1.wifi }
         let totalWwan = relevantData.reduce(0) { $0 + $1.wwan }
         let maxTotal = relevantData.map(\.total).max() ?? 0
@@ -84,17 +87,10 @@ struct StatisticsView: View {
     }
     
     private var monthlyStatistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
-        // 現在の月の開始日を取得
         guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
             return (0, 0, 0)
         }
         
-        // 月末日を取得
-        guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
-            return (0, 0, 0)
-        }
-        
-        // 月間データを読み込む
         let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
         
         let totalWifi = monthlyData.reduce(0) { $0 + Double($1.wifi) / 1024 / 1024 / 1024 }
@@ -104,17 +100,20 @@ struct StatisticsView: View {
         return (totalWifi, totalWwan, maxTotal)
     }
     
+    private let selectionColors = (
+        ruleLine: Color.orange.opacity(0.3),
+        background: Color(.systemGray6).opacity(0.95),
+        border: Color.orange.opacity(0.3)
+    )
+
     // MARK: - Body
     var body: some View {
         ZStack {
             Image("StaticBackGround")
                 .edgesIgnoringSafeArea(.all)
             
-            // FUCK: 画面遷移した時に謎に下にいくから調整
-            // 原因は画面遷移した時のBackが邪魔で
-            // ごめんなせえ
-            VStack{
-                HStack(spacing: 20){
+            VStack {
+                HStack(spacing: 20) {
                     Text("グラフ")
                         .font(.system(size: 16, weight: selectedTab == "グラフ" ? .bold : .regular))
                         .foregroundColor(selectedTab == "グラフ" ? .primary : .gray)
@@ -137,23 +136,23 @@ struct StatisticsView: View {
                 .padding(.bottom, 20)
                 
                 if selectedTab == "グラフ" {
-                    VStack(spacing: 8) { // 全体のスペーシングを減少
+                    VStack(spacing: 8) {
                         // グラフのヘッダー
                         HStack {
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(Color.orange.opacity(0.3))
-                                .frame(width: 5, height: 18) // 高さを減少
+                                .frame(width: 5, height: 18)
                             
                             Text("データ使用量")
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .padding(.horizontal, 40)
-                                .padding(.vertical, 5) // パディングを減少
+                                .padding(.vertical, 5)
                                 .background(Color.orange.opacity(0.3))
                                 .cornerRadius(10)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .padding(.horizontal, 30) // パディングを調整して横幅を揃える
+                        .padding(.horizontal, 30)
                         
                         // セグメントコントロール
                         HStack(spacing: 20) {
@@ -166,8 +165,8 @@ struct StatisticsView: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, 10) // パディングを調整
-                        .padding(.vertical, 6) // パディングを減少
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
                         .background(Color(.systemGray6))
                         .cornerRadius(20)
                         
@@ -189,13 +188,13 @@ struct StatisticsView: View {
                                 moveDate(by: 1)
                             }
                         }
-                        .padding(.horizontal, 12) // パディングを調整して横幅を揃える
-                        .padding(.vertical, 6) // パディングを減少
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
                         .background(Color.orange.opacity(0.2))
                         .cornerRadius(15)
                         
                         // グラフ部分
-                        VStack(spacing: 4) {
+                        ZStack(alignment: .top) {
                             Chart {
                                 ForEach(displayData) { item in
                                     LineMark(
@@ -213,12 +212,24 @@ struct StatisticsView: View {
                                     .interpolationMethod(.linear)
                                 }
                                 
-                                if let selectedDate = rawSelectedDate {
-                                    RuleMark(x: .value("Selected", selectedDate))
-                                        .foregroundStyle(.gray.opacity(0.3))
-                                        .annotation(position: .top) {
-                                            selectedDataAnnotation(for: selectedDate)
-                                        }
+                                if let selectedPoint = selectedDataPoint {
+                                    RuleMark(x: .value("Selected", selectedPoint.date))
+                                        .foregroundStyle(selectionColors.ruleLine)
+                                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                                    
+                                    PointMark(
+                                        x: .value("Date", selectedPoint.date),
+                                        y: .value("WiFi", selectedPoint.wifi)
+                                    )
+                                    .foregroundStyle(Color.green)
+                                    .symbolSize(80)
+                                    
+                                    PointMark(
+                                        x: .value("Date", selectedPoint.date),
+                                        y: .value("Mobile", selectedPoint.wwan)
+                                    )
+                                    .foregroundStyle(Color.orange)
+                                    .symbolSize(80)
                                 }
                             }
                             .chartForegroundStyleScale([
@@ -230,46 +241,96 @@ struct StatisticsView: View {
                             .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
                             .chartXAxis(content: customXAxis)
                             .chartYAxis(content: customYAxis)
-                            .chartXSelection(value: $rawSelectedDate)
-                            .frame(height: 200)
-                            .padding(6)
-                            .background(Color(.systemGray6))
-                            .cornerRadius(15)
-                        }
-                        .padding(.vertical, 4)
-                        // スワイプジェスチャーを追加
-                        .gesture(
-                            DragGesture()
-                                .onEnded { value in
-                                    let threshold: CGFloat = 50 // スワイプを検知する閾値
-                                    if value.translation.width > threshold {
-                                        // 右にスワイプ -> 前の日付へ
-                                        moveDate(by: -1)
-                                    } else if value.translation.width < -threshold {
-                                        // 左にスワイプ -> 次の日付へ
-                                        moveDate(by: 1)
+                            .chartOverlay { proxy in
+                                GeometryReader { geometry in
+                                    Rectangle()
+                                        .fill(.clear)
+                                        .contentShape(Rectangle())
+                                        .gesture(
+                                            DragGesture(minimumDistance: 0)
+                                                .onChanged { value in
+                                                    if !isDragging {
+                                                        isDragging = true
+                                                    }
+                                                    let adjustedLocation = CGPoint(
+                                                        x: value.location.x - geometry.frame(in: .local).minX,
+                                                        y: value.location.y - geometry.frame(in: .local).minY
+                                                    )
+                                                    selectedLocation = adjustedLocation
+                                                    updateSelectedDataPoint(at: geometry, proxy: proxy)
+                                                }
+                                                .onEnded { _ in
+                                                    isDragging = false
+                                                    selectedDataPoint = nil
+                                                }
+                                        )
+                                }
+                            }
+                            
+                            if let selected = selectedDataPoint {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(formatDate(selected.date))
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(.primary)
+                                    
+                                    HStack(spacing: 8) {
+                                        SelectionDataLabel(
+                                            iconName: "wifi",
+                                            value: selected.wifi,
+                                            color: .green
+                                        )
+                                        
+                                        SelectionDataLabel(
+                                            iconName: "antenna.radiowaves.left.and.right",
+                                            value: selected.wwan,
+                                            color: .orange
+                                        )
+                                        
+                                        SelectionDataLabel(
+                                            iconName: "sum",
+                                            value: selected.total,
+                                            color: .primary
+                                        )
                                     }
                                 }
-                        )
+                                .padding(.vertical, 8)
+                                .padding(.horizontal, 10)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 10)
+                                        .fill(selectionColors.background)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .stroke(selectionColors.border, lineWidth: 1)
+                                        )
+                                )
+                                .padding(.top, 8)
+                                .transition(.opacity)
+                            }
+                        }
+                        .frame(height: 200)
+                        .padding(6)
+                        .background(Color(.systemGray6))
+                        .cornerRadius(15)
+                        
                         // 使用量サマリー
-                        VStack(spacing: 4) { // スペーシングを減少
+                        VStack(spacing: 4) {
                             HStack {
                                 RoundedRectangle(cornerRadius: 10)
                                     .fill(Color.orange.opacity(0.3))
-                                    .frame(width: 5, height: 18) // 高さを減少
+                                    .frame(width: 5, height: 18)
                                 
                                 Text(monthTitle)
                                     .font(.headline)
                                     .foregroundColor(.white)
                                     .padding(.horizontal, 40)
-                                    .padding(.vertical, 3) // パディングを減少
+                                    .padding(.vertical, 3)
                                     .background(Color.orange.opacity(0.3))
                                     .cornerRadius(10)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .padding(.horizontal, 12) // パディングを調整して横幅を揃える
+                            .padding(.horizontal, 12)
                             
-                            VStack(spacing: 4) { // スペーシングを減少
+                            VStack(spacing: 4) {
                                 VerticalSummaryCard(
                                     title: "使った通信量",
                                     value: String(format: "%.1f GB", monthlyStatistics.totalWwan),
@@ -288,13 +349,12 @@ struct StatisticsView: View {
                                     color: .green
                                 )
                             }
-                            .padding(.horizontal, 12) // パディングを調整して横幅を揃える
+                            .padding(.horizontal, 12)
                         }
-                        .padding(6) // パディングを減少
+                        .padding(6)
                         .background(Color(.systemGray6))
                         .cornerRadius(20)
                     }
-                    
                 } else if selectedTab == "りれき" {
                     // 履歴ビューの実装
                     VStack(spacing: 20) {
@@ -360,6 +420,30 @@ struct StatisticsView: View {
     }
     
     // MARK: - Helper Methods
+    private func updateSelectedDataPoint(at geometry: GeometryProxy, proxy: ChartProxy) {
+            // プロキシの座標空間内でX位置を計算
+        let xPosition = selectedLocation.x
+        
+        guard let date = proxy.value(atX: xPosition, as: Date.self) else { return }
+        
+        // 最も近いデータポイントを見つける
+        var closestPoint: DataPoint?
+        var minDistance: TimeInterval = .infinity
+        
+        for point in displayData {
+            let distance = abs(point.date.timeIntervalSince(date))
+            if distance < minDistance {
+                minDistance = distance
+                closestPoint = point
+            }
+        }
+        
+        // 選択されたデータポイントを更新
+        if isDragging {
+            selectedDataPoint = closestPoint
+        }
+    }
+    
     private func loadHourlyData() -> [DataPoint] {
         let hourlyData = loadHourlyDataUsage(for: currentDate)
         return hourlyData.map { usage in
@@ -371,10 +455,9 @@ struct StatisticsView: View {
             )
         }
     }
-
+    
     private func loadWeeklyData() -> [DataPoint] {
         let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
-        // 日曜日から土曜日までの7日間のデータを生成
         return weeklyData.map { usage in
             let date = calendar.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
             return DataPoint(
@@ -403,17 +486,6 @@ struct StatisticsView: View {
         }
     }
     
-    private func filterDataForCurrentPeriod() -> [DataPoint] {
-        switch selectedSegment {
-        case .daily:
-            return displayData.filter { calendar.isDate($0.date, inSameDayAs: currentDate) }
-        case .weekly:
-            return displayData.filter { calendar.isDate($0.date, equalTo: weekStartDate, toGranularity: .weekOfYear) }
-        case .monthly:
-            return displayData.filter { calendar.isDate($0.date, equalTo: currentDate, toGranularity: .month) }
-        }
-    }
-    
     private func moveDate(by value: Int) {
         if let newDate = calendar.date(byAdding: selectedSegment.calendarComponent, value: value, to: currentDate) {
             currentDate = newDate
@@ -424,20 +496,16 @@ struct StatisticsView: View {
         switch selectedSegment {
         case .daily:
             let startDate = calendar.startOfDay(for: currentDate)
-            // 終了日を次の日の00:00に設定（24時間表示のため）
             guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) else {
                 return startDate...startDate
             }
             return startDate...endDate
             
         case .weekly:
-            // 週の開始日（日曜日）
             let startDate = weekStartDate
-            // 週の終了日（土曜日の終わり）
             guard let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) else {
                 return startDate...startDate
             }
-            // 土曜日の23:59:59まで表示
             guard let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate) else {
                 return startDate...startDate
             }
@@ -447,18 +515,30 @@ struct StatisticsView: View {
             guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
                 return currentDate...currentDate
             }
-            // 月の最終日を取得
             guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
                 return startOfMonth...startOfMonth
             }
-            // 月末の23:59:59まで表示
             guard let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfMonth) else {
                 return startOfMonth...startOfMonth
             }
             return startOfMonth...endOfDay
         }
     }
-
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        switch selectedSegment {
+        case .daily:
+            formatter.dateFormat = "H時"
+        case .weekly:
+            formatter.dateFormat = "M/d (E)"
+            formatter.locale = Locale(identifier: "ja_JP")
+        case .monthly:
+            formatter.dateFormat = "M/d"
+        }
+        return formatter.string(from: date)
+    }
+    
     private func customXAxis() -> some AxisContent {
         AxisMarks(preset: .aligned, values: .stride(by: selectedSegment.strideComponent)) { value in
             if let date = value.as(Date.self) {
@@ -474,12 +554,9 @@ struct StatisticsView: View {
                         let day = calendar.component(.day, from: date)
                         let isLastDayOfMonth = calendar.isDate(date, equalTo: getChartDateRange().upperBound, toGranularity: .day)
                         
-                        // 月末が30日または31日の場合の特別処理
                         if day >= 30 {
-                            return isLastDayOfMonth  // 月末日のみ表示
+                            return isLastDayOfMonth
                         }
-                        
-                        // それ以外の日は5の倍数と1日を表示
                         return day % 5 == 0 || day == 1
                     }
                 }()
@@ -524,26 +601,6 @@ struct StatisticsView: View {
         }
     }
     
-    private func selectedDataAnnotation(for date: Date) -> some View {
-        Group {
-            if let dataPoint = displayData.first(where: {
-                calendar.isDate($0.date, equalTo: date, toGranularity: selectedSegment.granularity)
-            }) {
-                VStack {
-                    Text(dataPoint.date, format: getDateFormat())
-                        .font(.caption)
-                    Text("WiFi: \(String(format: "%.2f GB", dataPoint.wifi))")
-                        .foregroundColor(.green)
-                    Text("Mobile: \(String(format: "%.2f GB", dataPoint.wwan))")
-                        .foregroundColor(.orange)
-                }
-                .padding(8)
-                .background(Color(.systemBackground))
-                .cornerRadius(8)
-            }
-        }
-    }
-    
     private var formattedDate: String {
         let formatter = DateFormatter()
         switch selectedSegment {
@@ -563,51 +620,43 @@ struct StatisticsView: View {
             return formatter.string(from: currentDate)
         }
     }
+}
+
+// MARK: - Supporting Views
+struct SelectionDataLabel: View {
+    let iconName: String
+    let value: Double
+    let color: Color
     
-    private func getDateFormat() -> Date.FormatStyle {
-        switch selectedSegment {
-        case .daily:
-            return .dateTime.hour()
-        case .weekly:
-            return .dateTime.weekday()
-        case .monthly:
-            return .dateTime.month().day()
+    var body: some View {
+        HStack(spacing: 2) {
+            Image(systemName: iconName)
+                .font(.system(size: 12))
+                .foregroundColor(color)
+            
+            Text(String(format: "%.1fGB", value))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(color)
         }
-    }
-    
-    private func getAxisLabelFormat() -> Date.FormatStyle {
-        switch selectedSegment {
-        case .daily:
-            return .dateTime.hour()
-        case .weekly:
-            return .dateTime.weekday(.abbreviated)
-        case .monthly:
-            return .dateTime.day()
-        }
+        .frame(minWidth: 50, alignment: .leading)
     }
 }
 
-// MARK: - StatCard View
-struct StatCard: View {
+// DataLabelコンポーネントの更新（グラフ凡例用）
+struct DataLabel: View {
     let title: String
-    let value: String
+    let value: Double
+    let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
+                .font(.caption2)
+                .foregroundColor(color.opacity(0.8))
+            Text(String(format: "%.2f GB", value))
                 .font(.caption)
-                .foregroundColor(.secondary)
-            Text(value)
-                .font(.headline)
-                .foregroundColor(.primary)
+                .foregroundColor(color)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
-                .shadow(radius: 2)
-        )
     }
 }
 
@@ -655,22 +704,22 @@ struct VerticalSummaryCard: View {
     var body: some View {
         HStack {
             Text(title)
-                .font(.footnote) // subheadlineからfootnoteに変更してより小さく
+                .font(.footnote)
                 .foregroundColor(.gray)
             
             Spacer()
             
             Text(value)
-                .font(.callout) // title3からcalloutに変更してより小さく
+                .font(.callout)
                 .fontWeight(.bold)
                 .foregroundColor(color)
         }
-        .padding(.horizontal, 12) // 16から12に減少
-        .padding(.vertical, 8) // 12から8に減少
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(
-            RoundedRectangle(cornerRadius: 10) // 12から10に減少
+            RoundedRectangle(cornerRadius: 10)
                 .fill(Color(.systemBackground))
-                .shadow(radius: 1) // 2から1に減少してより軽い見た目に
+                .shadow(radius: 1)
         )
     }
 }
