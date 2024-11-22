@@ -102,6 +102,25 @@ struct HomeView: View {
                             
                             HStack {
                                 Spacer()
+                                Button("飯") {
+                                    recoverStamina()
+                                }
+                                .padding()
+                                .background(Color.green)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                                
+                                Button("遊") {
+                                    if stamina > 0 {
+                                        stamina -= 10
+                                        stress = max(0, stress - 5) // 遊ぶとストレスが減る
+                                    }
+                                }
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                                
                                 ZStack {
                                     Rectangle()
                                         .fill(Color.white)
@@ -146,6 +165,8 @@ struct HomeView: View {
                     }
                 }
                 
+                
+                
                 VStack {
                     Spacer()
                         .frame(height: UIScreen.main.bounds.height * 0.85)
@@ -177,7 +198,7 @@ struct HomeView: View {
         } // NavigationView
         .onAppear {
             startTimer()
-            updateStaminaFromBackground()
+            updateValuesFromBackground()
         }
         .onDisappear {
             saveLastActiveDate()
@@ -194,14 +215,21 @@ struct HomeView: View {
             }
         }
     }
-    // バックグラウンドから復帰したときにスタミナを更新
-    private func updateStaminaFromBackground() {
+    // バックグラウンド復帰時にスタミナとストレスを更新
+    private func updateValuesFromBackground() {
         let currentDate = Date()
         let elapsedTime = currentDate.timeIntervalSince(lastActiveDate) // 経過時間 (秒)
         
-        let staminaToReduce = Int(elapsedTime / 180) // 3分ごとに1減少
+        // スタミナの減少: 3分ごとに1減少
+        let staminaToReduce = Int(elapsedTime / 180)
         if staminaToReduce > 0 {
             stamina = max(0, stamina - Double(staminaToReduce)) // スタミナが0未満にならないように
+        }
+        
+        // ストレスの増加: 5分ごとに1増加
+        let stressToIncrease = Int(elapsedTime / 300)
+        if stressToIncrease > 0 {
+            stress = min(100, stress + Double(stressToIncrease)) // ストレスが100を超えないように
         }
         
         // タイムスタンプを現在時刻に更新
@@ -211,6 +239,10 @@ struct HomeView: View {
     // アプリが閉じられる際にタイムスタンプを保存
     private func saveLastActiveDate() {
         lastActiveDate = Date()
+    }
+    // スタミナ回復処理
+    private func recoverStamina() {
+        stamina = min(100, stamina + 20) // スタミナを最大100まで回復
     }
 }
 
