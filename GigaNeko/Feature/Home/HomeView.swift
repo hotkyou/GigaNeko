@@ -1,3 +1,8 @@
+
+
+
+
+
 import SwiftUI
 
 struct HomeView: View {
@@ -10,7 +15,7 @@ struct HomeView: View {
     @State private var stress: Double = 15
     @State private var staminatimer: Timer?
     @AppStorage("lastActiveDate") private var lastActiveDate: Date = Date()
-
+    
     var body: some View {
         NavigationView { // NavigationViewで全体をラップ
             GeometryReader { geometry in
@@ -79,7 +84,7 @@ struct HomeView: View {
                                             .font(.system(size: 9))
                                         ProgressView(value: stamina / 100) // 0.0〜1.0に変換
                                             .scaleEffect(x: 1, y: 2) // 高さを増やす
-                                          
+                                        
                                     }
                                     Spacer()
                                     Divider()
@@ -93,7 +98,7 @@ struct HomeView: View {
                                             .font(.system(size: 9))
                                         ProgressView(value: stress / 100) // 0.0〜1.0に変換
                                             .scaleEffect(x: 1, y: 2)
-                                      
+                                        
                                     }
                                     Spacer()
                                 }
