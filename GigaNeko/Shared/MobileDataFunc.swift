@@ -6,38 +6,6 @@ struct SavedDataUsage {
     let launchtime: TimeInterval
 }
 
-// データを保存する関数
-func saveDataUsage() {
-    let wifi = SystemDataUsage.wifiCompelete
-    let wwan = SystemDataUsage.wwanCompelete
-    let currentDate = Date()
-    var dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] ?? []
-    let lastLaunchTime = loadSavedDataUsage().launchtime
-    
-    print(wifi)
-    // 再起動チェック
-    if launchTime() > lastLaunchTime {
-        // 起動時間が前回の起動より長ければ、配列の最後の辞書を上書き
-        if var lastDataUsage = dataUsageArray.last {
-            lastDataUsage["wifi"] = wifi
-            lastDataUsage["wwan"] = wwan
-            lastDataUsage["date"] = currentDate
-            dataUsageArray[dataUsageArray.count - 1] = lastDataUsage
-        } else {
-            // 初回起動または月の初め
-            dataUsageArray.append(["wifi": wifi, "wwan": wwan, "date": currentDate])
-        }
-    } else {
-        // 起動時間が短ければ配列に新しいデータを追加
-        dataUsageArray.append(["wifi": wifi, "wwan": wwan, "date": currentDate])
-    }
-    print(dataUsageArray)
-    
-    UserDefaults.standard.set(dataUsageArray, forKey: "dataUsage")
-    UserDefaults.standard.set(launchTime(), forKey: "launchtime")
-}
-
-// データ構造体
 struct HourlyDataUsage {
     var hour: Int
     var wifi: UInt64
@@ -48,6 +16,59 @@ struct DailyDataUsage {
     var day: Int
     var wifi: UInt64
     var wwan: UInt64
+}
+
+// データを保存する関数
+func saveDataUsage() {
+    let currentWifi = SystemDataUsage.wifiCompelete
+    let currentWwan = SystemDataUsage.wwanCompelete
+    let currentDate = Date()
+    
+    //差を管理しているDB
+    var dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] ?? []
+    //前回の現在データ使用量を管理するDB
+    let lastUsageDict = UserDefaults.standard.dictionary(forKey: "lastUsage") ?? [:]
+    let previousWifi = lastUsageDict["wifi"] as? UInt64 ?? 0
+    let previousWwan = lastUsageDict["wwan"] as? UInt64 ?? 0
+    let previousLaunchTime = lastUsageDict["launchtime"] as? TimeInterval ?? 0
+    // 現在の起動時間を取得
+    let currentLaunchTime = launchTime()
+    
+    // データの差分を計算
+    var wifiDifference: UInt64
+    var wwanDifference: UInt64
+    
+    if currentLaunchTime <  previousLaunchTime {
+        print("再起動")
+        // 再起動後の処理
+        wifiDifference = currentWifi
+        wwanDifference = currentWwan
+    } else {
+        print("通常起動")
+        // 通常起動時の処理（差分計算）
+        print(previousWifi, previousWwan)
+        if currentWifi >= previousWifi && currentWwan >= previousWwan {
+            // 両方のカウンターが正常な場合
+            wifiDifference = currentWifi - previousWifi
+            wwanDifference = currentWwan - previousWwan
+        } else {
+            // 何らかのタイミングでリセットされた場合
+            print("カウンターリセット検出")
+            wifiDifference = currentWifi
+            wwanDifference = currentWwan
+        }
+    }
+    
+    // 差DBに入れるためのデータ
+    let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
+    dataUsageArray.append(differenceEntry)
+    UserDefaults.standard.set(dataUsageArray, forKey: "dataUsage")
+    
+    // 現在の使用量を保存
+    let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
+    UserDefaults.standard.set(newLastUsage, forKey: "lastUsage")
+    
+    print("Data Usage Array with Differences: \(dataUsageArray)")
 }
 
 // 日ごとに時間単位でデータを取得
@@ -79,7 +100,7 @@ func loadHourlyDataUsage(for date: Date) -> [HourlyDataUsage] {
 }
 
 // 週ごとに日単位でデータを取得
-func loadWeeklyDataUsage(for startDate: Date) -> [DailyDataUsage] {
+func loadWeeklyDataUsage(for date: Date) -> [DailyDataUsage] {
     guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
         return []
     }
@@ -87,21 +108,39 @@ func loadWeeklyDataUsage(for startDate: Date) -> [DailyDataUsage] {
     let calendar = Calendar.current
     var dailyDataUsage: [DailyDataUsage] = []
     
+    // 指定された日付の週の日曜日を取得
+    guard let sunday = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: date)) else {
+        return []
+    }
+    
+    // 日曜日から土曜日までの7日間のデータを取得
     for dayOffset in 0..<7 {
-        guard let date = calendar.date(byAdding: .day, value: dayOffset, to: startDate) else { continue }
+        guard let targetDate = calendar.date(byAdding: .day, value: dayOffset, to: sunday) else { continue }
         
+        // その日のデータをフィルタリング
         let dailyData = dataUsageArray.filter { entry in
-            if let entryDate = entry["date"] as? Date, calendar.isDate(entryDate, inSameDayAs: date) {
-                return true
+            if let entryDate = entry["date"] as? Date {
+                return calendar.isDate(entryDate, inSameDayAs: targetDate)
             }
             return false
         }
         
+        // その日の合計使用量を計算
         let totalWifi = dailyData.reduce(0) { $0 + ($1["wifi"] as? UInt64 ?? 0) }
         let totalWwan = dailyData.reduce(0) { $0 + ($1["wwan"] as? UInt64 ?? 0) }
         
-        dailyDataUsage.append(DailyDataUsage(day: calendar.component(.day, from: date), wifi: totalWifi, wwan: totalWwan))
+        // 曜日のインデックス（0=日曜、1=月曜、...、6=土曜）を取得
+        let dayIndex = calendar.component(.weekday, from: targetDate) - 1
+        
+        dailyDataUsage.append(DailyDataUsage(
+            day: dayIndex,
+            wifi: totalWifi,
+            wwan: totalWwan
+        ))
     }
+    
+    // 曜日順（日曜から土曜）でソート
+    dailyDataUsage.sort { $0.day < $1.day }
     
     return dailyDataUsage
 }
@@ -113,82 +152,48 @@ func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
     }
     
     let calendar = Calendar.current
+    
+    // 月の初日を取得
+    guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: date)),
+          let _ = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+        return []
+    }
+    
     var dailyDataUsage: [DailyDataUsage] = []
     
-    // ClosedRangeをRangeに変換
-    if let dayRange = calendar.range(of: .day, in: .month, for: date) {
-        let range = dayRange.lowerBound..<dayRange.upperBound
-
-        for day in range {
-            let dailyData = dataUsageArray.filter { entry in
-                if let entryDate = entry["date"] as? Date,
-                   calendar.isDate(entryDate, equalTo: date, toGranularity: .month),
-                   calendar.component(.day, from: entryDate) == day {
-                    return true
-                }
-                return false
-            }
-            
-            let totalWifi = dailyData.reduce(0) { $0 + ($1["wifi"] as? UInt64 ?? 0) }
-            let totalWwan = dailyData.reduce(0) { $0 + ($1["wwan"] as? UInt64 ?? 0) }
-            
-            dailyDataUsage.append(DailyDataUsage(day: day, wifi: totalWifi, wwan: totalWwan))
+    // 月の全日数分のデータを生成
+    guard let daysInMonth = calendar.range(of: .day, in: .month, for: date)?.count else {
+        return []
+    }
+    
+    for day in 1...daysInMonth {
+        // その日の日付を生成
+        guard let currentDate = calendar.date(byAdding: .day, value: day - 1, to: startOfMonth) else {
+            continue
         }
+        
+        // その日のデータをフィルタリング
+        let dailyData = dataUsageArray.filter { entry in
+            guard let entryDate = entry["date"] as? Date else { return false }
+            return calendar.isDate(entryDate, inSameDayAs: currentDate)
+        }
+        
+        // データ使用量を集計
+        let totalWifi = dailyData.reduce(0) { $0 + ($1["wifi"] as? UInt64 ?? 0) }
+        let totalWwan = dailyData.reduce(0) { $0 + ($1["wwan"] as? UInt64 ?? 0) }
+        
+        // 1から始まる日付でデータを追加
+        dailyDataUsage.append(DailyDataUsage(day: day, wifi: totalWifi, wwan: totalWwan))
     }
     
     return dailyDataUsage
 }
-
-func loadSavedDataUsage(for period: Calendar.Component? = nil) -> SavedDataUsage {
-    // UserDefaultsから保存されたデータを取得
-    guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
-        return SavedDataUsage(wifi: 0, wwan: 0, launchtime: 0)
-    }
-    
-    let launchtime = UserDefaults.standard.object(forKey: "launchtime") as? TimeInterval ?? 0
-    let calendar = Calendar.current
-    let currentDate = Date()
-    
-    var totalWifiUsage: UInt64 = 0
-    var totalWwanUsage: UInt64 = 0
-    
-    for entry in dataUsageArray {
-        if let wifi = entry["wifi"] as? UInt64,
-           let wwan = entry["wwan"] as? UInt64,
-           let date = entry["date"] as? Date {
-            
-            // 日、月、年ごとのフィルタリング
-            if let period = period {
-                let isInSamePeriod = calendar.isDate(date, equalTo: currentDate, toGranularity: period)
-                if !isInSamePeriod { continue }
-            }
-            
-            // Wi-FiとWWANのデータ使用量を合計
-            totalWifiUsage += wifi
-            totalWwanUsage += wwan
-        }
-    }
-    
-    // 合計したデータ量を表示
-    print("総WiFi使用量: \(totalWifiUsage) bytes")
-    print("総WWAN使用量: \(totalWwanUsage) bytes")
-    
-    // 合計データ量を持つSavedDataUsage構造体を返す
-    return SavedDataUsage(wifi: totalWifiUsage, wwan: totalWwanUsage, launchtime: launchtime)
-}
-
 
 func resetData() {
     let Wifi: UInt64 = 0
     let Wwan: UInt64 = 0
     
     saveDataUsage()
-}
-
-func nowTime() -> String {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyy/MM/dd HH:mm:ss"
-    return dateFormatter.string(from: Date())
 }
 
 func launchTime() -> TimeInterval {
@@ -199,16 +204,3 @@ func launchTime() -> TimeInterval {
     //return dateFormatter.string(from: uptime)!
     return uptime
 }
-
-func getDayData() -> Int {
-    return 100
-}
-
-func getWeekData() -> Int {
-    return 100
-}
-
-func getMonthData() -> Int {
-    return 100
-}
-

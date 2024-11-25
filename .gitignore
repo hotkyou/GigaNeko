@@ -7,13 +7,15 @@ xcuserdata/
 
 ## Obj-C/Swift specific
 *.hmap
-*.xcuserstate
 *.xcworkspace
+*.xcuserdata
+*.xccheckout
 
 ## App packaging
 *.ipa
 *.dSYM.zip
 *.dSYM
+
 
 ## Playgrounds
 timeline.xctimeline
@@ -62,3 +64,8 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+.DS_Store
+*.swp 
+
+UserInterfaceState.xcuserstate 

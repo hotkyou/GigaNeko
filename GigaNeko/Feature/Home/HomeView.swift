@@ -17,7 +17,7 @@ struct HomeView: View {
     @AppStorage("lastActiveDate") private var lastActiveDate: Date = Date()
     
     var body: some View {
-        NavigationView { // NavigationViewで全体をラップ
+        NavigationStack { // NavigationViewで全体をラップ
             GeometryReader { geometry in
                 ScrollView(.horizontal, showsIndicators: false) {
                     Image("HomeBackGroundImage")
