@@ -208,6 +208,7 @@ struct HomeView: View {
         .onDisappear {
             saveLastActiveDate()
         }
+        .scrollDisabled(true)
     }
     // Timerを開始
     private func startTimer() {
