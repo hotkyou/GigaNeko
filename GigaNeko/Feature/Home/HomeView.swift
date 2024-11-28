@@ -1,8 +1,3 @@
-
-
-
-
-
 import SwiftUI
 
 // パーティクル1つの情報を保持する構造体
@@ -138,59 +133,31 @@ struct HomeView: View {
                                     .opacity(0.7)
                                     .cornerRadius(20)
                                 
-                                HStack {
-                                    // 小数点切り捨て
-                                    let truncatedStamina = floor(stamina)
-                                    Spacer()
-                                    Image("Stamina")
-                                        .resizable()
-                                        .frame(width: 20, height: 20)
-                                        .offset(x: 0, y: 0)
-                                    VStack(alignment: .leading) {
-                                        Text("スタミナ値: \(Int(truncatedStamina))")
-                                            .foregroundColor(.gray)
-                                            .font(.system(size: 9))
-                                        ProgressView(value: stamina / 100) // 0.0〜1.0に変換
-                                            .scaleEffect(x: 1, y: 2) // 高さを増やす
-                                        
-                                    }
-                                    Spacer()
-                                    Divider()
+                                Text("5")
+                                    .foregroundColor(.gray)  // .foregroundStyleから.foregroundColorに変更
+                                    .font(.system(size: 50))
+                                
+                                VStack {
                                     Spacer()
                                     HStack {
                                         Spacer()
                                         Text("GB")
                                             .foregroundColor(.gray)
-                                            .font(.system(size: 9))
-                                        ProgressView(value: stress / 100) // 0.0〜1.0に変換
-                                            .scaleEffect(x: 1, y: 2)
-                                        
+                                            .font(.system(size: 18))
+                                            .padding(5)
                                     }
                                 }
                                 .frame(width: 80, height: 80)
                             }
-                            
-                            HStack {
-                                Spacer()
-                                Button("飯") {
-                                    recoverStamina()
-                                }
-                                .padding()
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                                
-                                Button("遊") {
-                                    if stamina > 0 {
-                                        stamina -= 10
-                                        stress = max(0, stress - 5) // 遊ぶとストレスが減る
-                                    }
-                                }
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                                
+                            .padding(.leading, leftPadding)
+                            .padding(.top, 65)
+                        }
+                        
+                        Spacer()
+                        
+                        HStack {
+                            Spacer()
+                            VStack(spacing: 20) {
                                 ZStack {
                                     Rectangle()
                                         .fill(Color.white)
@@ -199,16 +166,18 @@ struct HomeView: View {
                                         .cornerRadius(20)
                                     
                                     HStack {
+                                        // 小数点切り捨て
+                                        let truncatedStamina = floor(stamina)
                                         Spacer()
                                         Image("Stamina")
                                             .resizable()
                                             .frame(width: 20, height: 20)
                                             .offset(x: 0, y: 0)
                                         VStack(alignment: .leading) {
-                                            Text("あと 12:40")
+                                            Text("スタミナ値: \(Int(truncatedStamina))")
                                                 .foregroundColor(.gray)
                                                 .font(.system(size: 9))
-                                            ProgressView(value: 0.5)
+                                            ProgressView(value: stamina / 100)
                                                 .scaleEffect(x: 1, y: 2)
                                         }
                                         Spacer()
@@ -221,21 +190,39 @@ struct HomeView: View {
                                             Text("ストレス値")
                                                 .foregroundColor(.gray)
                                                 .font(.system(size: 9))
-                                            ProgressView(value: 0.5)
+                                            ProgressView(value: stress / 100)
                                                 .scaleEffect(x: 1, y: 2)
                                         }
                                         Spacer()
                                     }
-                                    .frame(width: 230, height: 34)
+                                    .frame(width: 230, height: 34)  // 36から34に修正
                                 }
                                 
-                                // ポイント表示
                                 HStack {
                                     Spacer()
+                                    Button("飯") {
+                                        recoverStamina()
+                                    }
+                                    .padding()
+                                    .background(Color.green)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                                    
+                                    Button("遊") {
+                                        if stamina > 0 {
+                                            stamina -= 10
+                                            stress = max(0, stress - 5)
+                                        }
+                                    }
+                                    .padding()
+                                    .background(Color.blue)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(8)
+                                    
                                     ZStack {
                                         Rectangle()
                                             .fill(Color.white)
-                                            .frame(width: 80, height: 23)
+                                            .frame(width: 80, height: 23)  // 230,34から80,23に修正
                                             .opacity(0.7)
                                             .cornerRadius(20)
                                         

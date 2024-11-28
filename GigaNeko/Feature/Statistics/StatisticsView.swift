@@ -415,7 +415,6 @@ struct StatisticsView: View {
             }
             .padding(.leading, 64)
             .padding(.trailing, 74)
-            .padding(.top, 30)
         }.toolbar(.hidden, for: .tabBar)
     }
     
