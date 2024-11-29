@@ -15,22 +15,22 @@ struct MainTabView: View {
             HomeView()
                 .tabItem{
                     Image(systemName: "house")
-                    Text("Home")
+                    Text("ホーム")
                 } .tag(0)
             FurnitureView()
                 .tabItem {
-                    Image(systemName: "book.fill")
-                    Text("Word")
+                    Image(systemName: "table.furniture")
+                    Text("家具")
                 }.tag(1)
             ShopView()
                 .tabItem {
-                    Image(systemName: "calendar")
-                    Text("Event")
+                    Image(systemName: "bag.fill")
+                    Text("ショップ")
                 }.tag(2)
             SettingView()
                 .tabItem {
                     Image(systemName: "gearshape")
-                    Text("setting")
+                    Text("設定")
                 }.tag(4)
         }
     }

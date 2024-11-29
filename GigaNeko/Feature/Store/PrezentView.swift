@@ -1,13 +1,13 @@
 //
-//  ProductView.swift
+//  PrezentView.swift
 //  GigaNeko
 //
-//  Created by 水原　樹 on 2024/10/31.
+//  Created by 水原　樹 on 2024/11/29.
 //
 
 import SwiftUI
 
-struct ProductGrid: View {
+struct PrezentGrid: View {
     let products: [(String, Int)]
     let columns: [GridItem]
     
@@ -20,7 +20,7 @@ struct ProductGrid: View {
             // Main product grid with animation for the entire screen
             LazyVGrid(columns: columns, spacing: 20) {
                 ForEach(products, id: \.0) { product in
-                    ProductView(productName: product.0, productPrice: product.1)
+                    PrezentView(productName: product.0, productPrice: product.1)
                         .onTapGesture {
                             selectedProduct = product
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
@@ -47,7 +47,7 @@ struct ProductGrid: View {
                         }
                     }
                 
-                ProductDetailView(productName: product.0, productPrice: product.1, showDetail: $showDetail)
+                PrezentDetailView(productName: product.0, productPrice: product.1, showDetail: $showDetail)
                     .scaleEffect(showDetail ? 1 : 0.5)
                     .opacity(showDetail ? 1 : 0)
                     .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showDetail)
@@ -56,13 +56,13 @@ struct ProductGrid: View {
     }
 }
 
-struct ProductView: View {
+struct PrezentView: View {
     let productName: String
     let productPrice: Int
     
     var body: some View {
         VStack(spacing: 15) {
-            Image("Food")
+            Image("TakaraBako")
                 .resizable()
                 .frame(width: 100, height: 100)
             
@@ -89,7 +89,7 @@ struct ProductView: View {
     }
 }
 
-struct ProductDetailView: View {
+struct PrezentDetailView: View {
     let productName: String
     let productPrice: Int
     @Binding var showDetail: Bool
@@ -144,9 +144,4 @@ struct ProductDetailView: View {
         .shadow(radius: 10)
         .transition(.scale)
     }
-}
-
-#Preview {
-    ProductGrid(products: [("普通の餌", 0), ("猫缶", 100), ("刺身", 200), ("またたび", 900)],
-                columns: [GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120))])
 }
