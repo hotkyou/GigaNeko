@@ -67,11 +67,11 @@ class PointSystem: ObservableObject {
     
     // UserDefaults保存メソッド
     private func saveToUserDefaults<T>(key: String, value: T) {
-        UserDefaults.standard.set(value, forKey: key)
+        UserDefaults.shared.set(value, forKey: key)
     }
 
     // UserDefaults読み込みメソッド
     private func loadFromUserDefaults<T>(key: String, defaultValue: T) -> T {
-        return UserDefaults.standard.value(forKey: key) as? T ?? defaultValue
+        return UserDefaults.shared.value(forKey: key) as? T ?? defaultValue
     }
 }
