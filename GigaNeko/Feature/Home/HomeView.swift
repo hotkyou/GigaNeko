@@ -82,10 +82,10 @@ struct HomeView: View {
     
     // 初回起動時の処理を行うための初期化
     init() {
-        let hasLaunched = UserDefaults.standard.bool(forKey: "hasLaunched")
+        let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
         _showFirstLaunchOverlay = State(initialValue: !hasLaunched)
         // 保存された猫の名前を取得
-        let savedName = UserDefaults.standard.string(forKey: "catName") ?? ""
+        let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
     }
     
@@ -480,9 +480,9 @@ struct HomeView: View {
                                     // 設定ボタン
                                     Button(action: {
                                         if dataNumber > 0 && dataNumber <= 200 {
-                                            UserDefaults.standard.set(catName, forKey: "catName")
-                                            UserDefaults.standard.set(dataNumber, forKey: "dataNumber")
-                                            UserDefaults.standard.set(true, forKey: "hasLaunched")
+                                            UserDefaults.shared.set(catName, forKey: "catName")
+                                            UserDefaults.shared.set(dataNumber, forKey: "dataNumber")
+                                            UserDefaults.shared.set(true, forKey: "hasLaunched")
                                             withAnimation(.easeOut(duration: 0.3)) {
                                                 showSecondLaunchOverlay = false
                                             }
