@@ -32,8 +32,8 @@ struct ShopView: View {
                 HStack {
                     Spacer()
                     HStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3))
+                        Image("Point")
+                            .resizable()
                             .frame(width: 30, height: 30)
                             .padding(.leading, 10)
                         
@@ -80,7 +80,7 @@ struct ShopView: View {
                                 ProductGrid(products: products, columns: columns)
                                 
                                 SectionHeader(title: "おもちゃ", id: "おもちゃ")
-                                ProductGrid(products: products, columns: columns)
+                                PrezentGrid(products: products, columns: columns)
                                 
                                 SectionHeader(title: "プレゼント", id: "プレゼント")
                                 ProductGrid(products: products, columns: columns)
