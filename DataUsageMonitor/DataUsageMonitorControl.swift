@@ -3,7 +3,7 @@ import SwiftUI
 import WidgetKit
 
 struct DataUsageMonitorControl: ControlWidget {
-    static let kind: String = "hotkyou.GigaNeko.DataUsageMonitor"
+    static let kind: String = "\(Identifier.groupIdentifier).DataUsageMonitor"
 
     var body: some ControlWidgetConfiguration {
         AppIntentControlConfiguration(

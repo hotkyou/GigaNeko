@@ -23,7 +23,7 @@ struct GigaNekoApp: App {
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     // バックグラウンドタスクの識別子
-    let refreshTaskIdentifier = "hotkyou.GigaNeko.refresh"
+    let refreshTaskIdentifier = "\(Identifier.groupIdentifier).refresh"
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // バックグラウンドタスクの登録

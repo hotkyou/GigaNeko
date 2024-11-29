@@ -45,6 +45,9 @@ struct Provider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<DataEntry> {
+        
+        // データの更新
+        saveDataUsage()
         // 現在の月のデータを取得
         let (wifi, wwan) = getCurrentMonthUsage()
         
@@ -57,6 +60,7 @@ struct Provider: AppIntentTimelineProvider {
         
         // 30分ごとに更新
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+        
         return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
     
@@ -65,21 +69,6 @@ struct Provider: AppIntentTimelineProvider {
     }
 
     private func getCurrentMonthUsage() -> (wifi: Double, wwan: Double) {
-        // デバッグ出力を追加
-        print("Widget: Attempting to access UserDefaults")
-        
-        if let groupDefaults = UserDefaults(suiteName: "group.com.hotkyou.giganeko") {
-            print("Widget: Successfully accessed group UserDefaults")
-            if let dataUsageArray = groupDefaults.array(forKey: "dataUsage") {
-                print("Widget: Found dataUsage array with \(dataUsageArray.count) entries")
-            } else {
-                print("Widget: No dataUsage array found")
-            }
-        } else {
-            print("Widget: Failed to access group UserDefaults")
-        }
-        
-        // 既存のコード
         let calendar = Calendar.current
         let currentDate = Date()
         

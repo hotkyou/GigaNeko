@@ -61,15 +61,11 @@ func saveDataUsage() {
     
     // 差DBに入れるためのデータ
     let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
-    dataUsageArray.append(differenceEntry)
-    UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
-    
-    // 現在の使用量を保存
     let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
+    dataUsageArray.append(differenceEntry)
+    
+    UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
     UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
-    print("App: Saving to UserDefaults")
-    print("App: Current UserDefaults path:", UserDefaults.shared.volatileDomainNames)
-    print("App: DataUsage count:", dataUsageArray.count)
     UserDefaults.shared.synchronize()
     
     print("Data Usage Array with Differences: \(dataUsageArray)")
@@ -198,6 +194,5 @@ func launchTime() -> TimeInterval {
     let dateFormatter = DateComponentsFormatter()
     dateFormatter.unitsStyle = .full
     dateFormatter.allowedUnits = [.hour, .minute, .second]
-    //return dateFormatter.string(from: uptime)!
     return uptime
 }

@@ -134,7 +134,7 @@ struct HomeView: View {
                                     .cornerRadius(20)
                                 
                                 Text("5")
-                                    .foregroundColor(.gray)  // .foregroundStyleから.foregroundColorに変更
+                                    .foregroundColor(.gray)
                                     .font(.system(size: 50))
                                 
                                 VStack {
@@ -195,7 +195,7 @@ struct HomeView: View {
                                         }
                                         Spacer()
                                     }
-                                    .frame(width: 230, height: 34)  // 36から34に修正
+                                    .frame(width: 230, height: 34)
                                 }
                                 
                                 HStack {
@@ -222,7 +222,7 @@ struct HomeView: View {
                                     ZStack {
                                         Rectangle()
                                             .fill(Color.white)
-                                            .frame(width: 80, height: 23)  // 230,34から80,23に修正
+                                            .frame(width: 80, height: 23)
                                             .opacity(0.7)
                                             .cornerRadius(20)
                                         
@@ -334,7 +334,7 @@ struct HomeView: View {
                                         .font(.system(size: 12))
                                     Divider()
                                         .frame(height: 15)
-                                    Text(catName)  // ここを変更
+                                    Text(catName)
                                         .foregroundColor(.gray)
                                         .font(.system(size: 12))
                                 }
