@@ -1,4 +1,5 @@
 import WidgetKit
+import AppIntents
 import SwiftUI
 import Charts
 
@@ -21,6 +22,15 @@ struct DataEntry: TimelineEntry {
     }
 }
 
+struct SwitchPageIntent: AppIntent {
+    static var title: LocalizedStringResource = "Switch Page"
+    
+    func perform() async throws -> some IntentResult {
+        UserDefaults.shared.set(!UserDefaults.shared.bool(forKey: "isWiFiPage"), forKey: "isWiFiPage")
+        return .result()
+    }
+}
+
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> DataEntry {
         DataEntry(
@@ -32,9 +42,7 @@ struct Provider: AppIntentTimelineProvider {
     }
 
     func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> DataEntry {
-        // 現在の月のデータを取得
         let (wifi, wwan) = getCurrentMonthUsage()
-        
         return DataEntry(
             date: Date(),
             configuration: configuration,
@@ -44,10 +52,7 @@ struct Provider: AppIntentTimelineProvider {
     }
     
     func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<DataEntry> {
-        
-        // データの更新
         saveDataUsage()
-        // 現在の月のデータを取得
         let (wifi, wwan) = getCurrentMonthUsage()
         
         let entry = DataEntry(
@@ -57,7 +62,6 @@ struct Provider: AppIntentTimelineProvider {
             wwan: wwan
         )
         
-        // 30分ごとに更新
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
         
         return Timeline(entries: [entry], policy: .after(nextUpdate))
@@ -65,30 +69,6 @@ struct Provider: AppIntentTimelineProvider {
     
     private func bytesToGB(_ bytes: Int64) -> Double {
         Double(bytes) / (1024 * 1024 * 1024)
-    }
-
-    private func getCurrentMonthUsage() -> (wifi: Double, wwan: Double) {
-        let calendar = Calendar.current
-        let currentDate = Date()
-        
-        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
-            return (0, 0)
-        }
-        
-        // 月間データを取得
-        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
-        
-        // WiFiの合計を計算
-        let totalWifi = monthlyData.reduce(0.0) { sum, data in
-            sum + (Double(data.wifi) / (1024 * 1024 * 1024))
-        }
-        
-        // モバイルデータの合計を計算
-        let totalWwan = monthlyData.reduce(0.0) { sum, data in
-            sum + (Double(data.wwan) / (1024 * 1024 * 1024))
-        }
-        
-        return (totalWifi, totalWwan)
     }
 }
 
@@ -102,6 +82,8 @@ struct DataUsageMonitorEntryView: View {
             SmallWidgetView(entry: entry)
         case .systemMedium:
             MediumWidgetView(entry: entry)
+        case .systemLarge:
+            LargeWidgetView(entry: entry)
         case .accessoryCircular:
             CircularLockScreenView(entry: entry)
         case .accessoryRectangular:
@@ -117,73 +99,148 @@ struct DataUsageMonitorEntryView: View {
 struct SmallWidgetView: View {
     let entry: DataEntry
     
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日 HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }
+    
     var body: some View {
+        let isWiFiPage = UserDefaults.shared.bool(forKey: "isWiFiPage")
+        
+        ZStack {
+            if isWiFiPage {
+                wifiDataView
+            } else {
+                mobileDataView
+            }
+            
+            // ページ切り替えボタン
+            VStack {
+                Spacer()
+                Button(intent: SwitchPageIntent()) {
+                    HStack(spacing: 4) {
+                        Circle()
+                            .fill(!isWiFiPage ? Color.orange : Color.gray.opacity(0.3))
+                            .frame(width: 4, height: 4)
+                        Circle()
+                            .fill(isWiFiPage ? Color.blue : Color.gray.opacity(0.3))
+                            .frame(width: 4, height: 4)
+                    }
+                }
+                .padding(.bottom, 4)
+            }
+        }
+    }
+    
+    private var updateTimeView: some View {
+        HStack {
+            Text("更新: \(dateFormatter.string(from: entry.date))")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary)
+            Spacer()
+        }
+        .padding(.bottom, 8)
+    }
+    
+    // モバイルデータビュー
+    private var mobileDataView: some View {
         VStack(spacing: 8) {
             // ヘッダー
             HStack {
-                Text("今月の通信量")
-                    .font(.caption)
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                    .font(.system(size: 12))
+                    .foregroundColor(.orange)
+                Text("モバイル通信")
+                    .font(.system(size: 13))
                     .foregroundColor(.secondary)
                 Spacer()
             }
             
-            Spacer()
-            
             // 使用量とデータ制限
             VStack(spacing: 6) {
-                // 使用量
-                HStack {
-                    Image(systemName: "antenna.radiowaves.left.and.right")
-                        .foregroundColor(.orange)
-                    Text(String(format: "%.1f GB / %d GB", entry.wwan, entry.dataLimit))
-                        .font(.caption2)
-                    Spacer()
-                }
+                Text(String(format: "%.1f", entry.wwan))
+                    .font(.system(size: 28, weight: .medium))
+                    + Text(" GB").font(.system(size: 14))
                 
                 // プログレスバー
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        // 背景のバー
                         Rectangle()
                             .fill(Color.gray.opacity(0.2))
-                            .frame(height: 6)
-                            .cornerRadius(3)
+                            .frame(height: 5)
+                            .cornerRadius(2.5)
                         
-                        // 使用量のバー
                         Rectangle()
                             .fill(Color.orange)
-                            .frame(width: min(CGFloat(entry.wwan / Double(entry.dataLimit)) * geometry.size.width, geometry.size.width), height: 6)
-                            .cornerRadius(3)
+                            .frame(width: min(CGFloat(entry.wwan / Double(entry.dataLimit)) * geometry.size.width, geometry.size.width), height: 5)
+                            .cornerRadius(2.5)
                     }
                 }
-                .frame(height: 6)
+                .frame(height: 5)
                 
-                // 残り通信量
+                // 残り通信量とプラン
                 HStack {
-                    Image(systemName: "gauge.with.dots.needle.50percent")
-                        .foregroundColor(.green)
-                    Text(String(format: "残り %.1f GB", entry.remainingData))
-                        .font(.caption2)
-                    Spacer()
+                    HStack(spacing: 4) {
+                        Image(systemName: "gauge.with.dots.needle.50percent")
+                            .font(.system(size: 11))
+                            .foregroundColor(.green)
+                        Text(String(format: "残り %.1f GB", entry.remainingData))
+                            .font(.system(size: 12))
+                            .foregroundColor(.green)
+                    }
                 }
             }
             
             Spacer()
             
             // 更新日時
+            updateTimeView
+        }
+        .padding(10)
+    }
+    
+    // WiFiデータビュー
+    private var wifiDataView: some View {
+        VStack(spacing: 8) {
+            // ヘッダー
             HStack {
-                Text(entry.date, style: .date)
-                    .font(.caption2)
+                Image(systemName: "wifi")
+                    .font(.system(size: 12))
+                    .foregroundColor(.blue)
+                Text("WiFi通信量")
+                    .font(.system(size: 13))
                     .foregroundColor(.secondary)
                 Spacer()
             }
+            
+            VStack(spacing: 8) {
+                Text(String(format: "%.1f", entry.wifi))
+                    .font(.system(size: 28, weight: .medium))
+                    + Text(" GB").font(.system(size: 14))
+            }
+            
+            Spacer()
+            
+            // 更新日時
+            updateTimeView
         }
-        .padding()
+        .padding(10)
     }
 }
 
 struct MediumWidgetView: View {
     let entry: DataEntry
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日 HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }
     
     var body: some View {
         HStack {
@@ -214,7 +271,7 @@ struct MediumWidgetView: View {
                 Spacer()
                 
                 // 更新日時
-                Text(entry.date, style: .date)
+                Text("更新: \(dateFormatter.string(from: entry.date))")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
@@ -245,6 +302,140 @@ struct MediumWidgetView: View {
     }
 }
 
+struct LargeWidgetView: View {
+    let entry: DataEntry
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M月d日 HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // ヘッダー
+            HStack {
+                Text("今月のデータ使用状況")
+                    .font(.headline)
+                Spacer()
+                Text("更新: \(dateFormatter.string(from: entry.date))")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            // データ使用量の詳細情報
+            HStack(spacing: 20) {
+                // モバイルデータの円グラフ
+                VStack {
+                    ZStack {
+                        Circle()
+                            .stroke(Color.gray.opacity(0.2), lineWidth: 12)
+                        
+                        Circle()
+                            .trim(from: 0, to: CGFloat(min(entry.wwan / Double(entry.dataLimit), 1.0)))
+                            .stroke(Color.orange, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                        
+                        VStack {
+                            Text(String(format: "%.1f%%", (entry.wwan / Double(entry.dataLimit)) * 100))
+                                .font(.system(size: 20, weight: .bold))
+                            Text("使用済")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .frame(width: 120, height: 120)
+                    
+                    Text("モバイルデータ")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 4)
+                }
+                
+                // WiFiデータの情報
+                VStack(alignment: .leading, spacing: 12) {
+                    // WiFi使用量
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Image(systemName: "wifi")
+                                .foregroundColor(.blue)
+                            Text("WiFi通信量")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.1f GB", entry.wifi))
+                            .font(.title3)
+                            .bold()
+                    }
+                    
+                    // モバイルデータ詳細
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                                .foregroundColor(.orange)
+                            Text("モバイルデータ")
+                                .font(.caption)
+                        }
+                        Text(String(format: "%.1f GB / %d GB", entry.wwan, entry.dataLimit))
+                            .font(.title3)
+                            .bold()
+                    }
+                }
+            }
+            .padding(.vertical, 8)
+            
+            // 残りデータ量のプログレスバー
+            VStack(alignment: .leading, spacing: 8) {
+                Text("残りデータ量")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                
+                GeometryReader { geometry in
+                    ZStack(alignment: .leading) {
+                        // 背景のバー
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.2))
+                            .frame(height: 8)
+                            .cornerRadius(4)
+                        
+                        // 使用量のバー
+                        Rectangle()
+                            .fill(Color.orange)
+                            .frame(width: min(CGFloat(entry.wwan / Double(entry.dataLimit)) * geometry.size.width, geometry.size.width), height: 8)
+                            .cornerRadius(4)
+                    }
+                }
+                .frame(height: 8)
+                
+                HStack {
+                    Text(String(format: "残り %.1f GB", entry.remainingData))
+                        .font(.callout)
+                        .foregroundColor(.green)
+                    Spacer()
+                    Text(String(format: "合計 %d GB", entry.dataLimit))
+                        .font(.callout)
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            // 合計使用量
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("合計通信量")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(String(format: "%.1f GB", entry.total))
+                        .font(.title2)
+                        .bold()
+                }
+                Spacer()
+            }
+        }
+        .padding()
+    }
+}
+
 struct CircularLockScreenView: View {
     let entry: DataEntry
     
@@ -262,12 +453,24 @@ struct CircularLockScreenView: View {
 struct RectangularLockScreenView: View {
     let entry: DataEntry
     
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }
+    
     var body: some View {
         VStack(alignment: .leading) {
             HStack {
                 Image(systemName: "antenna.radiowaves.left.and.right")
                 Text("モバイル通信")
                     .font(.system(size: 12, weight: .medium))
+                Spacer()
+                Text(dateFormatter.string(from: entry.date))
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
             }
             .foregroundColor(.orange)
             
@@ -286,8 +489,16 @@ struct RectangularLockScreenView: View {
 struct InlineLockScreenView: View {
     let entry: DataEntry
     
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        formatter.locale = Locale(identifier: "ja_JP")
+        formatter.timeZone = TimeZone.current
+        return formatter
+    }
+    
     var body: some View {
-        Text(String(format: "通信量: %.1f GB / %d GB", entry.wwan, entry.dataLimit))
+        Text(String(format: "通信量: %.1f/%dGB (%@)", entry.wwan, entry.dataLimit, dateFormatter.string(from: entry.date)))
     }
 }
 
@@ -302,9 +513,10 @@ struct DataUsageMonitor: Widget {
         .supportedFamilies([
             .systemSmall,
             .systemMedium,
-            .accessoryCircular,    // ロック画面の円形ウィジェット
-            .accessoryRectangular, // ロック画面の長方形ウィジェット
-            .accessoryInline       // ロック画面のインラインウィジェット
+            .systemLarge,
+            .accessoryCircular,
+            .accessoryRectangular,
+            .accessoryInline
         ])
         .configurationDisplayName("データ使用量")
         .description("月間のデータ使用量と残量を表示")
