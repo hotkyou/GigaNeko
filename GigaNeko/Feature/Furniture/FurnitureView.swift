@@ -26,8 +26,8 @@ struct FurnitureView: View {
                     Spacer()
                     
                     HStack{
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3)) // グレーの背景
+                        Image("Point")
+                            .resizable()
                             .frame(width: 30, height: 30) // サイズ調整
                             .padding(.leading, 10) // 左側に少し余白
                         
@@ -47,15 +47,10 @@ struct FurnitureView: View {
                         ForEach(0..<3) { index in
                             // アイテム
                             VStack{
-                                RoundedRectangle(cornerRadius: 5)
-                                    .fill(Color.gray.opacity(0.8))
+                                Image("MabekiNeko")
+                                    .resizable()
                                     .frame(width: 300, height: 300)
-                                    .overlay(
-                                        Text("招き猫")
-                                            .foregroundColor(.black)
-                                    )
-                                
-                                
+                                    
                                 Spacer()
                                     .frame(height: 10)
                               
@@ -90,7 +85,7 @@ struct FurnitureView: View {
                     .padding(.bottom,20)
                     
                     
-                    Text("使用料ポイント+20%")
+                    Text("ストレス値耐性Up!!")
                         .padding(.top,20)
                         .padding(.bottom,50)
             
@@ -101,8 +96,8 @@ struct FurnitureView: View {
                     }) {
                         HStack {
                             // 左側の四角いアイコン
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.gray.opacity(0.3)) // 背景色をグレーに設定
+                            Image("Point")
+                                .resizable()
                                 .frame(width: 30, height: 30)
                             Text("3000pt")
                                 .font(.system(size: 18, weight: .medium)) // フォントスタイル

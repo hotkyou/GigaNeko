@@ -34,8 +34,8 @@ struct ShopView: View {
                 HStack {
                     Spacer()
                     HStack {
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.gray.opacity(0.3))
+                        Image("Point")
+                            .resizable()
                             .frame(width: 30, height: 30)
                             .padding(.leading, 10)
                         

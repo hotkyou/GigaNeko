@@ -25,9 +25,9 @@ func saveDataUsage() {
     let currentDate = Date()
     
     //差を管理しているDB
-    var dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] ?? []
+    var dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] ?? []
     //前回の現在データ使用量を管理するDB
-    let lastUsageDict = UserDefaults.standard.dictionary(forKey: "lastUsage") ?? [:]
+    let lastUsageDict = UserDefaults.shared.dictionary(forKey: "lastUsage") ?? [:]
     let previousWifi = lastUsageDict["wifi"] as? UInt64 ?? 0
     let previousWwan = lastUsageDict["wwan"] as? UInt64 ?? 0
     let previousLaunchTime = lastUsageDict["launchtime"] as? TimeInterval ?? 0
@@ -61,19 +61,19 @@ func saveDataUsage() {
     
     // 差DBに入れるためのデータ
     let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
-    dataUsageArray.append(differenceEntry)
-    UserDefaults.standard.set(dataUsageArray, forKey: "dataUsage")
-    
-    // 現在の使用量を保存
     let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
-    UserDefaults.standard.set(newLastUsage, forKey: "lastUsage")
+    dataUsageArray.append(differenceEntry)
+    
+    UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
+    UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
+    UserDefaults.shared.synchronize()
     
     print("Data Usage Array with Differences: \(dataUsageArray)")
 }
 
 // 日ごとに時間単位でデータを取得
 func loadHourlyDataUsage(for date: Date) -> [HourlyDataUsage] {
-    guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
+    guard let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] else {
         return []
     }
     
@@ -101,7 +101,7 @@ func loadHourlyDataUsage(for date: Date) -> [HourlyDataUsage] {
 
 // 週ごとに日単位でデータを取得
 func loadWeeklyDataUsage(for date: Date) -> [DailyDataUsage] {
-    guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
+    guard let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] else {
         return []
     }
     
@@ -147,7 +147,7 @@ func loadWeeklyDataUsage(for date: Date) -> [DailyDataUsage] {
 
 // 月ごとに日単位でデータを取得
 func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
-    guard let dataUsageArray = UserDefaults.standard.array(forKey: "dataUsage") as? [[String: Any]] else {
+    guard let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] else {
         return []
     }
     
@@ -189,18 +189,10 @@ func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
     return dailyDataUsage
 }
 
-func resetData() {
-    let Wifi: UInt64 = 0
-    let Wwan: UInt64 = 0
-    
-    saveDataUsage()
-}
-
 func launchTime() -> TimeInterval {
     let uptime:TimeInterval = ProcessInfo().systemUptime
     let dateFormatter = DateComponentsFormatter()
     dateFormatter.unitsStyle = .full
     dateFormatter.allowedUnits = [.hour, .minute, .second]
-    //return dateFormatter.string(from: uptime)!
     return uptime
 }

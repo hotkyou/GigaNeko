@@ -43,6 +43,8 @@ struct StatisticsView: View {
     @State private var selectedLocation: CGPoint = .zero
     @State private var isDragging: Bool = false
     
+    @State private var dataLimit: Int = UserDefaults.shared.integer(forKey: "dataNumber")
+    
     private let calendar = Calendar.current
     
     private var monthTitle: String {
@@ -339,7 +341,7 @@ struct StatisticsView: View {
                                 
                                 VerticalSummaryCard(
                                     title: "残っている通信量",
-                                    value: String(format: "%.1f GB", max(0, 7 - monthlyStatistics.totalWwan)),
+                                    value: String(format: "%.1f GB", max(0, Double(dataLimit) - monthlyStatistics.totalWwan)),
                                     color: .orange
                                 )
                                 
@@ -415,8 +417,16 @@ struct StatisticsView: View {
             }
             .padding(.leading, 64)
             .padding(.trailing, 74)
-            .padding(.top, 30)
-        }.toolbar(.hidden, for: .tabBar)
+        }
+        .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            // ビューが表示されるたびにUserDefaultsから制限値を読み込む
+            dataLimit = UserDefaults.shared.integer(forKey: "dataNumber")
+            // デフォルト値の設定（値が0の場合）
+            if dataLimit == 0 {
+                dataLimit = 7 // デフォルト値
+            }
+        }
     }
     
     // MARK: - Helper Methods
@@ -444,7 +454,7 @@ struct StatisticsView: View {
         }
     }
     
-    private func loadHourlyData() -> [DataPoint] {
+    public func loadHourlyData() -> [DataPoint] {
         let hourlyData = loadHourlyDataUsage(for: currentDate)
         return hourlyData.map { usage in
             let date = calendar.date(bySettingHour: usage.hour, minute: 0, second: 0, of: currentDate) ?? currentDate
@@ -456,7 +466,7 @@ struct StatisticsView: View {
         }
     }
     
-    private func loadWeeklyData() -> [DataPoint] {
+    public func loadWeeklyData() -> [DataPoint] {
         let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
         return weeklyData.map { usage in
             let date = calendar.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
@@ -468,7 +478,7 @@ struct StatisticsView: View {
         }
     }
     
-    private func loadMonthlyData() -> [DataPoint] {
+    public func loadMonthlyData() -> [DataPoint] {
         guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
             return []
         }

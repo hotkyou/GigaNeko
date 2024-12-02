@@ -81,3 +81,4 @@ struct DataUsageInfo {
         wirelessWanDataReceived += info.wirelessWanDataReceived
     }
 }
+

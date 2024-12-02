@@ -1,26 +1,26 @@
 //
-//  ProductView.swift
+//  PrezentView.swift
 //  GigaNeko
 //
-//  Created by 水原　樹 on 2024/10/31.
+//  Created by 水原　樹 on 2024/11/29.
 //
 
 import SwiftUI
 
-struct ProductGrid: View {
+struct PrezentGrid: View {
     let products: [(String, Int)]
     let columns: [GridItem]
-    let storeSystem: StoreSystem // StoreSystemインスタンスを受け取る
-
+    
     @State private var selectedProduct: (String, Int)?
     @State private var showDetail = false
-    @State private var isAppearing = false
-
+    @State private var isAppearing = false // New state for the entire view's animation
+    
     var body: some View {
         ZStack {
+            // Main product grid with animation for the entire screen
             LazyVGrid(columns: columns, spacing: 20) {
                 ForEach(products, id: \.0) { product in
-                    ProductView(productName: product.0, productPrice: product.1)
+                    PrezentView(productName: product.0, productPrice: product.1)
                         .onTapGesture {
                             selectedProduct = product
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
@@ -29,14 +29,15 @@ struct ProductGrid: View {
                         }
                 }
             }
-            .scaleEffect(isAppearing ? 1 : 0.5)
-            .opacity(isAppearing ? 1 : 0)
+            .scaleEffect(isAppearing ? 1 : 0.5) // Scale effect for the bounce animation
+            .opacity(isAppearing ? 1 : 0) // Opacity to fade in
             .onAppear {
                 withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
                     isAppearing = true
                 }
             }
-
+            
+            // Detail view overlay
             if showDetail, let product = selectedProduct {
                 Color.black.opacity(0.4)
                     .edgesIgnoringSafeArea(.all)
@@ -45,29 +46,23 @@ struct ProductGrid: View {
                             showDetail = false
                         }
                     }
-
-                ProductDetailView(
-                    productName: product.0,
-                    productPrice: product.1,
-                    showDetail: $showDetail,
-                    storeSystem: storeSystem // インスタンスを渡す
-                )
-                .scaleEffect(showDetail ? 1 : 0.5)
-                .opacity(showDetail ? 1 : 0)
-                .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showDetail)
+                
+                PrezentDetailView(productName: product.0, productPrice: product.1, showDetail: $showDetail)
+                    .scaleEffect(showDetail ? 1 : 0.5)
+                    .opacity(showDetail ? 1 : 0)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.6), value: showDetail)
             }
         }
     }
 }
 
-
-struct ProductView: View {
+struct PrezentView: View {
     let productName: String
     let productPrice: Int
     
     var body: some View {
         VStack(spacing: 15) {
-            Image("Food")
+            Image("TakaraBako")
                 .resizable()
                 .frame(width: 100, height: 100)
             
@@ -94,44 +89,42 @@ struct ProductView: View {
     }
 }
 
-struct ProductDetailView: View {
+struct PrezentDetailView: View {
     let productName: String
     let productPrice: Int
     @Binding var showDetail: Bool
-    let storeSystem: StoreSystem // StoreSystemインスタンスを受け取る
-
+    
     var body: some View {
         VStack(spacing: 20) {
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color.gray.opacity(0.3))
                 .frame(width: 100, height: 100)
-
+            
             Text(productName)
                 .font(.title)
                 .bold()
-
+            
             Text("猫に与えられる餌アイテムです\n空腹ゲージを48時間回復します")
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-
+            
             Text("※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます")
                 .font(.footnote)
                 .foregroundColor(.red)
                 .padding(.horizontal)
-
+            
             HStack {
                 Text("\(productPrice) pt")
                     .padding(.horizontal)
-
+                
                 Button("購入") {
-                    // StoreSystemインスタンスを通じてfeedメソッドを呼び出す
-                    storeSystem.feed(point: productPrice)
+                    // Add purchase action here
                 }
                 .padding()
                 .background(Color.yellow.opacity(0.8))
                 .cornerRadius(10)
             }
-
+            
             Button(action: {
                 withAnimation {
                     showDetail = false
@@ -142,7 +135,7 @@ struct ProductDetailView: View {
                     .foregroundColor(.gray)
             }
             .padding(.top, 20)
-
+            
         }
         .padding()
         .frame(width: 300)
@@ -152,16 +145,3 @@ struct ProductDetailView: View {
         .transition(.scale)
     }
 }
-
-
-#Preview {
-    let pointSystem = PointSystem() // 仮のPointSystemインスタンス
-    let storeSystem = StoreSystem(pointSystem: pointSystem)
-
-    return ProductGrid(
-        products: [("普通の餌", 0), ("猫缶", 100), ("刺身", 200), ("またたび", 900)],
-        columns: [GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120))],
-        storeSystem: storeSystem // インスタンスを渡す
-    )
-}
-
