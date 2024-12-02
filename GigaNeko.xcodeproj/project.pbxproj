@@ -17,6 +17,8 @@
 		172FE5D22CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE5D02CF9523400FA3E4C /* MobileDataFunc.swift */; };
 		172FE5D72CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */; };
 		172FE5D82CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */; };
+		172FE63C2CF9942A00FA3E4C /* Identifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE63B2CF9942200FA3E4C /* Identifier.swift */; };
+		172FE63D2CF9942A00FA3E4C /* Identifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE63B2CF9942200FA3E4C /* Identifier.swift */; };
 		175F4FB32CC61DAF00E4E4FE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB22CC61DAF00E4E4FE /* FirebaseCore */; };
 /* End PBXBuildFile section */
 
@@ -66,6 +68,7 @@
 		172FE5D02CF9523400FA3E4C /* MobileDataFunc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileDataFunc.swift; sourceTree = "<group>"; };
 		172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsExtension.swift; sourceTree = "<group>"; };
 		172FE5D92CF95F6D00FA3E4C /* DataUsageMonitorExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DataUsageMonitorExtension.entitlements; sourceTree = "<group>"; };
+		172FE63B2CF9942200FA3E4C /* Identifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identifier.swift; sourceTree = "<group>"; };
 		4773A5532CC0F01300CCD0B2 /* GigaNeko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GigaNeko.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4773A5632CC0F01600CCD0B2 /* GigaNekoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4773A56D2CC0F01600CCD0B2 /* GigaNekoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -164,6 +167,7 @@
 		172FE5CC2CF951B200FA3E4C /* GigaNekoShared */ = {
 			isa = PBXGroup;
 			children = (
+				172FE63B2CF9942200FA3E4C /* Identifier.swift */,
 				172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */,
 				172FE5D02CF9523400FA3E4C /* MobileDataFunc.swift */,
 				172FE5CD2CF951E900FA3E4C /* SystemDataUsage.swift */,
@@ -390,6 +394,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				172FE5CF2CF951FD00FA3E4C /* SystemDataUsage.swift in Sources */,
+				172FE63C2CF9942A00FA3E4C /* Identifier.swift in Sources */,
 				172FE5D12CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */,
 				172FE5D72CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */,
 			);
@@ -402,6 +407,7 @@
 				172FE5CE2CF951FD00FA3E4C /* SystemDataUsage.swift in Sources */,
 				172FE5D82CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */,
 				172FE5D22CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */,
+				172FE63D2CF9942A00FA3E4C /* Identifier.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
