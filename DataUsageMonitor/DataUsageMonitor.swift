@@ -17,7 +17,6 @@ struct DataEntry: TimelineEntry {
         self.configuration = configuration
         self.wifi = wifi
         self.wwan = wwan
-        // UserDefaultsから通信量制限を取得、デフォルト値は7
         self.dataLimit = UserDefaults.shared.integer(forKey: "dataNumber") == 0 ? 7 : UserDefaults.shared.integer(forKey: "dataNumber")
     }
 }
@@ -114,6 +113,12 @@ struct DataUsageMonitorEntryView: View {
             SmallWidgetView(entry: entry)
         case .systemMedium:
             MediumWidgetView(entry: entry)
+        case .accessoryCircular:
+            CircularLockScreenView(entry: entry)
+        case .accessoryRectangular:
+            RectangularLockScreenView(entry: entry)
+        case .accessoryInline:
+            InlineLockScreenView(entry: entry)
         default:
             SmallWidgetView(entry: entry)
         }
@@ -251,6 +256,52 @@ struct MediumWidgetView: View {
     }
 }
 
+struct CircularLockScreenView: View {
+    let entry: DataEntry
+    
+    var body: some View {
+        Gauge(value: entry.wwan, in: 0...Double(entry.dataLimit)) {
+            Image(systemName: "antenna.radiowaves.left.and.right")
+        } currentValueLabel: {
+            Text(String(format: "%.1f", entry.wwan))
+                .font(.system(size: 12, weight: .medium))
+        }
+        .gaugeStyle(.accessoryCircular)
+    }
+}
+
+struct RectangularLockScreenView: View {
+    let entry: DataEntry
+    
+    var body: some View {
+        VStack(alignment: .leading) {
+            HStack {
+                Image(systemName: "antenna.radiowaves.left.and.right")
+                Text("モバイル通信")
+                    .font(.system(size: 12, weight: .medium))
+            }
+            .foregroundColor(.orange)
+            
+            HStack {
+                Text(String(format: "%.1f GB / %d GB", entry.wwan, entry.dataLimit))
+                    .font(.system(size: 14, weight: .semibold))
+                Spacer()
+                Text(String(format: "残り %.1f GB", entry.remainingData))
+                    .font(.system(size: 12))
+                    .foregroundColor(.green)
+            }
+        }
+    }
+}
+
+struct InlineLockScreenView: View {
+    let entry: DataEntry
+    
+    var body: some View {
+        Text(String(format: "通信量: %.1f GB / %d GB", entry.wwan, entry.dataLimit))
+    }
+}
+
 struct DataUsageMonitor: Widget {
     let kind: String = "DataUsageMonitor"
 
@@ -259,30 +310,14 @@ struct DataUsageMonitor: Widget {
             DataUsageMonitorEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
         }
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([
+            .systemSmall,
+            .systemMedium,
+            .accessoryCircular,    // ロック画面の円形ウィジェット
+            .accessoryRectangular, // ロック画面の長方形ウィジェット
+            .accessoryInline       // ロック画面のインラインウィジェット
+        ])
         .configurationDisplayName("データ使用量")
         .description("月間のデータ使用量と残量を表示")
     }
-}
-
-#Preview(as: .systemSmall) {
-    DataUsageMonitor()
-} timeline: {
-    DataEntry(
-        date: .now,
-        configuration: ConfigurationAppIntent(),
-        wifi: 2.5,
-        wwan: 1.8
-    )
-}
-
-#Preview(as: .systemMedium) {
-    DataUsageMonitor()
-} timeline: {
-    DataEntry(
-        date: .now,
-        configuration: ConfigurationAppIntent(),
-        wifi: 2.5,
-        wwan: 1.8
-    )
 }
