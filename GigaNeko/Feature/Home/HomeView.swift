@@ -74,6 +74,8 @@ struct HomeView: View {
     @State private var lastDragLocation: CGPoint?
     @State private var isDragging = false
     @State private var pettingTimer: Timer?
+    @State private var isEditingName = false
+    @State private var tempCatName = ""
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     
 
@@ -87,6 +89,9 @@ struct HomeView: View {
         // 保存された猫の名前を取得
         let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
+        // 保存されたデータ上限値を取得
+        let savedDataNumber = UserDefaults.shared.integer(forKey: "dataNumber")
+        _dataNumber = State(initialValue: savedDataNumber)
     }
     
     private func incrementNumber() {
@@ -96,7 +101,7 @@ struct HomeView: View {
     }
     
     private func decrementNumber() {
-        if dataNumber > 1 {
+        if dataNumber > 0 {
             dataNumber = max(1, dataNumber - 1)
         }
     }
@@ -133,21 +138,30 @@ struct HomeView: View {
                                     .opacity(0.7)
                                     .cornerRadius(20)
                                 
-                                Text("5")
-                                    .foregroundColor(.gray)  // .foregroundStyleから.foregroundColorに変更
-                                    .font(.system(size: 50))
-                                
-                                VStack {
-                                    Spacer()
-                                    HStack {
-                                        Spacer()
-                                        Text("GB")
-                                            .foregroundColor(.gray)
-                                            .font(.system(size: 18))
-                                            .padding(5)
+                                let (_, wwan) = getCurrentMonthUsage()
+                                VStack(spacing: 6) {
+                                    Text("\(String(format: "%.1f", wwan))")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 26, weight: .medium))
+                                    
+                                    ZStack(alignment: .leading) {
+                                        // バーの背景
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 60, height: 5)
+                                            .cornerRadius(2.5)
+                                        
+                                        // 使用量のバー
+                                        Rectangle()
+                                            .fill(Color.orange)
+                                            .frame(width: 60 * CGFloat(min(wwan / Double(dataNumber), 1.0)), height: 5)
+                                            .cornerRadius(2.5)
                                     }
+                                    
+                                    Text("\(dataNumber)GB")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 14))
                                 }
-                                .frame(width: 80, height: 80)
                             }
                             .padding(.leading, leftPadding)
                             .padding(.top, 65)
@@ -158,6 +172,7 @@ struct HomeView: View {
                         HStack {
                             Spacer()
                             VStack(spacing: 20) {
+                                // ステータス表示ZStack
                                 ZStack {
                                     Rectangle()
                                         .fill(Color.white)
@@ -165,74 +180,103 @@ struct HomeView: View {
                                         .opacity(0.7)
                                         .cornerRadius(20)
                                     
-                                    HStack {
-                                        // 小数点切り捨て
+                                    HStack(spacing: 15) {
                                         let truncatedStamina = floor(stamina)
-                                        Spacer()
-                                        Image("Stamina")
-                                            .resizable()
-                                            .frame(width: 20, height: 20)
-                                            .offset(x: 0, y: 0)
-                                        VStack(alignment: .leading) {
-                                            Text("スタミナ値: \(Int(truncatedStamina))")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 9))
-                                            ProgressView(value: stamina / 100)
-                                                .scaleEffect(x: 1, y: 2)
+                                        // スタミナ表示
+                                        HStack(spacing: 8) {
+                                            Image("Stamina")
+                                                .resizable()
+                                                .frame(width: 18, height: 18)
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("\(Int(truncatedStamina))%")
+                                                    .foregroundColor(.gray)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                ProgressView(value: stamina / 100)
+                                                    .scaleEffect(x: 1, y: 1.5)
+                                                    .tint(.green)
+                                            }
                                         }
-                                        Spacer()
-                                        Divider()
-                                        Spacer()
-                                        Image("Stress")
-                                            .resizable()
-                                            .frame(width: 20, height: 20)
-                                        VStack(alignment: .leading) {
-                                            Text("ストレス値")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 9))
-                                            ProgressView(value: stress / 100)
-                                                .scaleEffect(x: 1, y: 2)
+                                        .frame(maxWidth: .infinity)
+
+                                        // 区切り線
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 1, height: 25)
+                                        
+                                        // ストレス表示
+                                        HStack(spacing: 8) {
+                                            Image("Stress")
+                                                .resizable()
+                                                .frame(width: 18, height: 18)
+                                            VStack(alignment: .leading, spacing: 2) {
+                                                Text("\(Int(stress))%")
+                                                    .foregroundColor(.gray)
+                                                    .font(.system(size: 12, weight: .medium))
+                                                ProgressView(value: stress / 100)
+                                                    .scaleEffect(x: 1, y: 1.5)
+                                                    .tint(.orange)
+                                            }
                                         }
-                                        Spacer()
+                                        .frame(maxWidth: .infinity)
                                     }
-                                    .frame(width: 230, height: 34)  // 36から34に修正
+                                    .padding(.horizontal, 15)
                                 }
                                 
+                                // ボタンとポイント表示
                                 HStack {
-                                    Spacer()
-                                    Button("飯") {
-                                        recoverStamina()
+                                    // 飯ボタン
+                                    Button(action: recoverStamina) {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "fork.knife")
+                                                .font(.system(size: 12))
+                                            Text("飯")
+                                                .font(.system(size: 14, weight: .medium))
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(Color.green)
+                                        .cornerRadius(15)
                                     }
-                                    .padding()
-                                    .background(Color.green)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
                                     
-                                    Button("遊") {
+                                    // 遊ぶボタン
+                                    Button {
                                         if stamina > 0 {
                                             stamina -= 10
                                             stress = max(0, stress - 5)
                                         }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            Image(systemName: "party.popper")
+                                                .font(.system(size: 12))
+                                            Text("遊")
+                                                .font(.system(size: 14, weight: .medium))
+                                        }
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(Color.blue)
+                                        .cornerRadius(15)
                                     }
-                                    .padding()
-                                    .background(Color.blue)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(8)
                                     
+                                    // ポイント表示
                                     ZStack {
                                         Rectangle()
                                             .fill(Color.white)
-                                            .frame(width: 80, height: 23)  // 230,34から80,23に修正
+                                            .frame(width: 85, height: 28)
                                             .opacity(0.7)
-                                            .cornerRadius(20)
+                                            .cornerRadius(15)
                                         
-                                        HStack {
+                                        HStack(spacing: 4) {
                                             Image("Point")
                                                 .resizable()
-                                                .frame(width: 20, height: 20)
-                                            Text("3000pt")
+                                                .frame(width: 16, height: 16)
+                                            Text("3,000")
                                                 .foregroundColor(.gray)
-                                                .font(.system(size: 12))
+                                                .font(.system(size: 14, weight: .medium))
+                                            Text("pt")
+                                                .foregroundColor(.gray)
+                                                .font(.system(size: 10))
                                         }
                                     }
                                 }
@@ -320,41 +364,58 @@ struct HomeView: View {
                     // 下部のレベル表示
                     VStack {
                         Spacer()
-                            .frame(height: UIScreen.main.bounds.height * 0.85)
-                        HStack {
-                            Spacer()
-                            ZStack {
-                                Rectangle()
-                                    .fill(Color.white)
-                                    .opacity(0.7)
-                                    .cornerRadius(20)
-                                HStack {
+                            .frame(height: UIScreen.main.bounds.height * 0.75)
+                        
+                        // レベルと名前表示のZStack
+                        ZStack {
+                            Rectangle()
+                                .fill(Color.white)
+                                .opacity(0.7)
+                                .cornerRadius(20)
+                                .frame(height: 30)
+                            
+                            Button(action: {
+                                // 名前変更用のオーバーレイを表示
+                                tempCatName = catName  // 現在の名前を一時保存
+                                showFirstLaunchOverlay = true
+                                isEditingName = true
+                            }) {
+                                HStack(spacing: 12) {
                                     Text("Lv100")
                                         .foregroundColor(.gray)
-                                        .font(.system(size: 12))
-                                    Divider()
-                                        .frame(height: 15)
-                                    Text(catName)  // ここを変更
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 12))
+                                        .font(.system(size: 14))
+                                    
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 1, height: 15)
+
+                                    HStack(spacing: 4) {
+                                        Text(catName)
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 14))
+                                        Image(systemName: "pencil.circle.fill")
+                                            .foregroundColor(.orange.opacity(0.8))
+                                            .font(.system(size: 14))
+                                    }
                                 }
+                                .frame(width: 160)
                             }
-                            .frame(width: 150, height: 25)
-                            Spacer()
                         }
+                        .frame(width: 180)
+                        
                         Spacer()
                     }
                 }
                 .edgesIgnoringSafeArea(.all)
                 
-                // 初回起動時のオーバーレイ
+                // 名前入力オーバーレイ
                 if showFirstLaunchOverlay {
                     Color.black.opacity(0.4)
                         .edgesIgnoringSafeArea(.all)
                     
                     VStack {
                         Spacer()
-                            .frame(height: 100) // 上部の固定スペース
+                            .frame(height: 100)
                             
                         ZStack {
                             // チュートリアル画像
@@ -367,7 +428,7 @@ struct HomeView: View {
                             VStack(spacing: 20) {
                                 // 上部の説明テキスト
                                 VStack(spacing: 10) {
-                                    Text("名前を決めよう")
+                                    Text(isEditingName ? "名前を変更" : "名前を決めよう")
                                         .font(.title)
                                         .bold()
                                         .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
@@ -380,7 +441,6 @@ struct HomeView: View {
                                 
                                 // 入力フィールドとボタンを縦に並べるVStack
                                 VStack(spacing: 15) {
-                                    // 猫の名前入力フィールド
                                     TextField("猫の名前を入力", text: $catName)
                                         .textFieldStyle(RoundedBorderTextFieldStyle())
                                         .foregroundColor(.black)
@@ -388,22 +448,43 @@ struct HomeView: View {
                                         .background(Color.white)
                                         .padding(.horizontal)
                                     
-                                    // 次へボタン
-                                    Button(action: {
-                                        if !catName.isEmpty {
-                                            withAnimation(.easeOut(duration: 0.3)) {
+                                    HStack(spacing: 10) {
+                                        if isEditingName {
+                                            // キャンセルボタン
+                                            Button(action: {
+                                                catName = tempCatName  // 元の名前に戻す
                                                 showFirstLaunchOverlay = false
-                                                showSecondLaunchOverlay = true
+                                                isEditingName = false
+                                            }) {
+                                                Text("キャンセル")
+                                                    .foregroundColor(.black)
+                                                    .frame(width: 95, height: 45)
+                                                    .background(Color(red: 232/255, green: 201/255, blue: 160/255))
+                                                    .cornerRadius(20)
                                             }
                                         }
-                                    }) {
-                                        Text("次へ")
-                                            .foregroundColor(.black)
-                                            .frame(width: 200, height: 45)
-                                            .background(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                            .cornerRadius(20)
+                                        
+                                        // 次へ/決定ボタン
+                                        Button(action: {
+                                            if !catName.isEmpty {
+                                                UserDefaults.shared.set(catName, forKey: "catName")
+                                                if isEditingName {
+                                                    showFirstLaunchOverlay = false
+                                                    isEditingName = false
+                                                } else {
+                                                    showSecondLaunchOverlay = true
+                                                    showFirstLaunchOverlay = false
+                                                }
+                                            }
+                                        }) {
+                                            Text(isEditingName ? "決定" : "次へ")
+                                                .foregroundColor(.black)
+                                                .frame(width: isEditingName ? 95 : 200, height: 45)
+                                                .background(Color(red: 232/255, green: 201/255, blue: 160/255))
+                                                .cornerRadius(20)
+                                        }
+                                        .disabled(catName.isEmpty)
                                     }
-                                    .disabled(catName.isEmpty)
                                 }
                                 .padding(.bottom, 30)
                             }
@@ -412,7 +493,7 @@ struct HomeView: View {
                         
                         Spacer()
                     }
-                    .ignoresSafeArea(.keyboard) // キーボードを無視
+                    .ignoresSafeArea(.keyboard)
                     .transition(.scale.combined(with: .opacity))
                 } else if showSecondLaunchOverlay {
                     Color.black.opacity(0.4)

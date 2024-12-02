@@ -193,6 +193,30 @@ func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
     return dailyDataUsage
 }
 
+func getCurrentMonthUsage() -> (wifi: Double, wwan: Double) {
+    let calendar = Calendar.current
+    let currentDate = Date()
+    
+    guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
+        return (0, 0)
+    }
+    
+    // 月間データを取得
+    let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
+    
+    // WiFiの合計を計算
+    let totalWifi = monthlyData.reduce(0.0) { sum, data in
+        sum + (Double(data.wifi) / (1024 * 1024 * 1024))
+    }
+    
+    // モバイルデータの合計を計算
+    let totalWwan = monthlyData.reduce(0.0) { sum, data in
+        sum + (Double(data.wwan) / (1024 * 1024 * 1024))
+    }
+    
+    return (totalWifi, totalWwan)
+}
+
 func launchTime() -> TimeInterval {
     let uptime:TimeInterval = ProcessInfo().systemUptime
     let dateFormatter = DateComponentsFormatter()
