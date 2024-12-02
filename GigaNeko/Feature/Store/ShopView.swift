@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ShopView: View {
+    @ObservedObject var pointSystem: PointSystem // PointSystemを受け取る
     
     let products = [
         ("普通の餌", 0),
@@ -23,6 +24,7 @@ struct ShopView: View {
     ]
     
     var body: some View {
+        let storeSystem = StoreSystem(pointSystem: pointSystem)
         ZStack {
             Image("Background")
                 .resizable()
@@ -37,7 +39,7 @@ struct ShopView: View {
                             .frame(width: 30, height: 30)
                             .padding(.leading, 10)
                         
-                        Text("3600")
+                        Text("\(pointSystem.currentPoints)")
                             .font(.system(size: 24, weight: .medium))
                             .foregroundColor(.gray)
                             .padding(.horizontal, 10)
@@ -46,6 +48,13 @@ struct ShopView: View {
                     .background(Color.white)
                     .cornerRadius(12)
                     .padding()
+                    //テストボタン(消す)
+                    HStack {
+                        Button("test"){
+                            pointSystem.test()
+                        }
+                        .background()
+                    }
                 }
                 
                 VStack {
@@ -77,16 +86,16 @@ struct ShopView: View {
                         ScrollView {
                             Group {
                                 SectionHeader(title: "えさ", id: "えさ")
-                                ProductGrid(products: products, columns: columns)
+                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
                                 
                                 SectionHeader(title: "おもちゃ", id: "おもちゃ")
-                                ProductGrid(products: products, columns: columns)
+                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
                                 
                                 SectionHeader(title: "プレゼント", id: "プレゼント")
-                                ProductGrid(products: products, columns: columns)
+                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
                                 
                                 SectionHeader(title: "ポイント", id: "ポイント")
-                                ProductGrid(products: products, columns: columns)
+                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
                             }
                         }
                     }
@@ -114,5 +123,6 @@ struct SectionHeader: View {
 }
 
 #Preview {
-    ShopView()
+    let pointSystem = PointSystem() // PointSystemのインスタンスを作成
+    ShopView(pointSystem: pointSystem)
 }

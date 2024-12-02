@@ -2,7 +2,7 @@ import Foundation
 
 class PointSystem: ObservableObject {
     // 現在のポイント
-    @Published var currentPoints: Int = 0 {
+    @Published var currentPoints: Int = 1500 {
         didSet {
             saveToUserDefaults(key: userDefaultsKeyPoints, value: currentPoints)
         }
@@ -73,5 +73,10 @@ class PointSystem: ObservableObject {
     // UserDefaults読み込みメソッド
     private func loadFromUserDefaults<T>(key: String, defaultValue: T) -> T {
         return UserDefaults.standard.value(forKey: key) as? T ?? defaultValue
+    }
+    
+    //testpoint(消す)
+    func test(){
+        currentPoints += 1000
     }
 }

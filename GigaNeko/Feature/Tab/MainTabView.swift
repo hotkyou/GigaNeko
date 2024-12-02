@@ -10,6 +10,9 @@ import SwiftUI
 struct MainTabView: View {
     @State private var selectedItem = 0
     
+    // PointSystemのインスタンスを作成
+        let pointSystem = PointSystem()
+    
     var body: some View {
         TabView(selection:$selectedItem){
             HomeView()
@@ -22,7 +25,7 @@ struct MainTabView: View {
                     Image(systemName: "book.fill")
                     Text("Word")
                 }.tag(1)
-            ShopView()
+            ShopView(pointSystem: pointSystem)
                 .tabItem {
                     Image(systemName: "calendar")
                     Text("Event")
