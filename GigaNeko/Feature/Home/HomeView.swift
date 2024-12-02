@@ -249,7 +249,7 @@ struct HomeView: View {
                         VStack {
                             Spacer()
                             GeometryReader { geometry in
-                                Image("Neko")
+                                Image(isDragging ? "NadeNeko" : "Neko")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 300)

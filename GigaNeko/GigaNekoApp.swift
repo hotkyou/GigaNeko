@@ -1,14 +1,11 @@
 import SwiftUI
 import ActivityKit
 import WidgetKit
-//import Firebase
 import BackgroundTasks
 
 @main
 struct GigaNekoApp: App {
-    // Firebaseの初期化
     init() {
-        //FirebaseApp.configure()
         saveDataUsage()
     }
     

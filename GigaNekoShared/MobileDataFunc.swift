@@ -52,23 +52,27 @@ func saveDataUsage() {
             wifiDifference = currentWifi - previousWifi
             wwanDifference = currentWwan - previousWwan
         } else {
-            // 何らかのタイミングでリセットされた場合
+            // 何らかのタイミングで前の値よりも下がった場合
+            // 一応0を格納
             print("カウンターリセット検出")
-            wifiDifference = currentWifi
-            wwanDifference = currentWwan
+            wifiDifference = 0
+            wwanDifference = 0
         }
     }
     
-    // 差DBに入れるためのデータ
-    let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
-    let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
-    dataUsageArray.append(differenceEntry)
-    
-    UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
-    UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
-    UserDefaults.shared.synchronize()
-    
-    print("Data Usage Array with Differences: \(dataUsageArray)")
+    // 過去との差が0か
+    if wifiDifference != 0 && wwanDifference != 0 {
+        // 差DBに入れるためのデータ
+        let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
+        let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
+        dataUsageArray.append(differenceEntry)
+        
+        UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
+        UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
+        UserDefaults.shared.synchronize()
+        
+        print("Data Usage Array with Differences: \(dataUsageArray)")
+    }
 }
 
 // 日ごとに時間単位でデータを取得
