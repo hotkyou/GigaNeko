@@ -17,9 +17,9 @@
 		172FE5D22CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE5D02CF9523400FA3E4C /* MobileDataFunc.swift */; };
 		172FE5D72CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */; };
 		172FE5D82CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */; };
-		172FE63C2CF9942A00FA3E4C /* Identifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE63B2CF9942200FA3E4C /* Identifier.swift */; };
-		172FE63D2CF9942A00FA3E4C /* Identifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE63B2CF9942200FA3E4C /* Identifier.swift */; };
 		175F4FB32CC61DAF00E4E4FE /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 175F4FB22CC61DAF00E4E4FE /* FirebaseCore */; };
+		4720F2A12CFD76530059D56B /* Identfier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4720F2A02CFD76530059D56B /* Identfier.swift */; };
+		4720F2A22CFD76530059D56B /* Identfier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4720F2A02CFD76530059D56B /* Identfier.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,7 +68,7 @@
 		172FE5D02CF9523400FA3E4C /* MobileDataFunc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MobileDataFunc.swift; sourceTree = "<group>"; };
 		172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsExtension.swift; sourceTree = "<group>"; };
 		172FE5D92CF95F6D00FA3E4C /* DataUsageMonitorExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DataUsageMonitorExtension.entitlements; sourceTree = "<group>"; };
-		172FE63B2CF9942200FA3E4C /* Identifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identifier.swift; sourceTree = "<group>"; };
+		4720F2A02CFD76530059D56B /* Identfier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identfier.swift; sourceTree = "<group>"; };
 		4773A5532CC0F01300CCD0B2 /* GigaNeko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GigaNeko.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4773A5632CC0F01600CCD0B2 /* GigaNekoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4773A56D2CC0F01600CCD0B2 /* GigaNekoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -167,10 +167,10 @@
 		172FE5CC2CF951B200FA3E4C /* GigaNekoShared */ = {
 			isa = PBXGroup;
 			children = (
-				172FE63B2CF9942200FA3E4C /* Identifier.swift */,
 				172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */,
 				172FE5D02CF9523400FA3E4C /* MobileDataFunc.swift */,
 				172FE5CD2CF951E900FA3E4C /* SystemDataUsage.swift */,
+				4720F2A02CFD76530059D56B /* Identfier.swift */,
 			);
 			path = GigaNekoShared;
 			sourceTree = "<group>";
@@ -393,8 +393,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4720F2A22CFD76530059D56B /* Identfier.swift in Sources */,
 				172FE5CF2CF951FD00FA3E4C /* SystemDataUsage.swift in Sources */,
-				172FE63C2CF9942A00FA3E4C /* Identifier.swift in Sources */,
 				172FE5D12CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */,
 				172FE5D72CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */,
 			);
@@ -407,7 +407,7 @@
 				172FE5CE2CF951FD00FA3E4C /* SystemDataUsage.swift in Sources */,
 				172FE5D82CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */,
 				172FE5D22CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */,
-				172FE63D2CF9942A00FA3E4C /* Identifier.swift in Sources */,
+				4720F2A12CFD76530059D56B /* Identfier.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -454,7 +454,7 @@
 				CODE_SIGN_ENTITLEMENTS = DataUsageMonitorExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DataUsageMonitor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DataUsageMonitor;
@@ -465,7 +465,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko.DataUsageMonitor;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan.GigaNeko.Sub;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -482,7 +482,7 @@
 				CODE_SIGN_ENTITLEMENTS = DataUsageMonitorExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DataUsageMonitor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DataUsageMonitor;
@@ -493,7 +493,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko.DataUsageMonitor;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan.GigaNeko.Sub;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -630,7 +630,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -645,7 +645,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan.GigaNeko;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -662,7 +662,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -677,7 +677,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan.GigaNeko;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
