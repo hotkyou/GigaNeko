@@ -71,7 +71,8 @@ struct StatisticsView: View {
     }
     
     private var statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
-        var relevantData: [DataPoint]
+        // 実績データ
+        let relevantData: [DataPoint]
         switch selectedSegment {
         case .daily:
             relevantData = loadHourlyData()
@@ -83,7 +84,13 @@ struct StatisticsView: View {
         
         let totalWifi = relevantData.reduce(0) { $0 + $1.wifi }
         let totalWwan = relevantData.reduce(0) { $0 + $1.wwan }
-        let maxTotal = relevantData.map(\.total).max() ?? 0
+        
+        // 予測データも含めて最大値を計算
+        var maxTotal = relevantData.map(\.total).max() ?? 0
+        if selectedSegment == .monthly {
+            let predictionMax = predictionData.map(\.total).max() ?? 0
+            maxTotal = max(maxTotal, predictionMax)
+        }
         
         return (totalWifi, totalWwan, maxTotal)
     }
@@ -107,6 +114,10 @@ struct StatisticsView: View {
         background: Color(.systemGray6).opacity(0.95),
         border: Color.orange.opacity(0.3)
     )
+    
+    @State private var predictionData: [DataPoint] = []
+    @State private var showLowConfidenceWarning = false
+    private let predictor = DataUsagePredictor.shared
 
     // MARK: - Body
     var body: some View {
@@ -203,15 +214,35 @@ struct StatisticsView: View {
                                         x: .value("Date", item.date),
                                         y: .value("WiFi", item.wifi)
                                     )
-                                    .foregroundStyle(by: .value("Type", "WiFi"))
+                                    .foregroundStyle(by: .value("Type", "実績\nWiFi"))
                                     .interpolationMethod(.linear)
                                     
                                     LineMark(
                                         x: .value("Date", item.date),
                                         y: .value("Mobile", item.wwan)
                                     )
-                                    .foregroundStyle(by: .value("Type", "モバイル"))
+                                    .foregroundStyle(by: .value("Type", "実績\nモバイル"))
                                     .interpolationMethod(.linear)
+                                }
+
+                                if selectedSegment == .monthly {
+                                    ForEach(predictionData) { item in
+                                        LineMark(
+                                            x: .value("Date", item.date),
+                                            y: .value("WiFi予測", item.wifi)
+                                        )
+                                        .foregroundStyle(by: .value("Type", "予測\nWiFi"))
+                                        .interpolationMethod(.linear)
+                                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                                        
+                                        LineMark(
+                                            x: .value("Date", item.date),
+                                            y: .value("モバイル予測", item.wwan)
+                                        )
+                                        .foregroundStyle(by: .value("Type", "予測\nモバイル"))
+                                        .interpolationMethod(.linear)
+                                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                                    }
                                 }
                                 
                                 if let selectedPoint = selectedDataPoint {
@@ -235,12 +266,14 @@ struct StatisticsView: View {
                                 }
                             }
                             .chartForegroundStyleScale([
-                                "WiFi": Color.green,
-                                "モバイル": Color.orange
+                                "実績\nWiFi": Color.green,
+                                "実績\nモバイル": Color.orange,
+                                "予測\nWiFi": Color.green.opacity(0.5),
+                                "予測\nモバイル": Color.orange.opacity(0.5)
                             ])
                             .chartLegend(position: .bottom, alignment: .center)
                             .chartXScale(domain: getChartDateRange())
-                            .chartYScale(domain: 0...(statistics.maxTotal * 1.2))
+                            .chartYScale(domain: 0...max(0.1, statistics.maxTotal * 1.2))
                             .chartXAxis(content: customXAxis)
                             .chartYAxis(content: customYAxis)
                             .chartOverlay { proxy in
@@ -267,6 +300,18 @@ struct StatisticsView: View {
                                                 }
                                         )
                                 }
+                            }
+                            
+                            // 警告メッセージのオーバーレイ
+                            if showLowConfidenceWarning {
+                                Text("予測の信頼性が低い可能性があります")
+                                    .font(.caption)
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.orange.opacity(0.8))
+                                    .cornerRadius(8)
+                                    .padding(.top, 4)
                             }
                             
                             if let selected = selectedDataPoint {
@@ -308,6 +353,12 @@ struct StatisticsView: View {
                                 .padding(.top, 8)
                                 .transition(.opacity)
                             }
+                        }
+                        .onAppear {
+                            updatePredictions()
+                        }
+                        .onChange(of: selectedSegment) { _ in
+                            updatePredictions()
                         }
                         .frame(height: 200)
                         .padding(6)
@@ -484,16 +535,39 @@ struct StatisticsView: View {
         }
         
         let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
-        return monthlyData.map { usage in
+        var accumulatedWifi: Double = 0
+        var accumulatedWwan: Double = 0
+        let today = Date()
+        let endOfToday = calendar.endOfDay(for: today)
+        
+        // 先にデータポイントを生成
+        let allDataPoints = monthlyData.compactMap { usage -> DataPoint? in
             guard let date = calendar.date(byAdding: .day, value: usage.day - 1, to: startOfMonth) else {
-                return DataPoint(date: currentDate, wifi: 0, wwan: 0)
+                return nil
             }
+            
+            // 未来のデータは累積せずに現在の値を維持
+            if date > calendar.startOfDay(for: today) {
+                return DataPoint(
+                    date: date,
+                    wifi: accumulatedWifi,
+                    wwan: accumulatedWwan
+                )
+            }
+            
+            // 現在までのデータは累積
+            accumulatedWifi += Double(usage.wifi) / 1024 / 1024 / 1024
+            accumulatedWwan += Double(usage.wwan) / 1024 / 1024 / 1024
+            
             return DataPoint(
                 date: date,
-                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
-                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
+                wifi: accumulatedWifi,
+                wwan: accumulatedWwan
             )
         }
+        
+        // フィルタリングを別途実行
+        return allDataPoints.filter { $0.date <= endOfToday }
     }
     
     private func moveDate(by value: Int) {
@@ -630,6 +704,76 @@ struct StatisticsView: View {
             return formatter.string(from: currentDate)
         }
     }
+    
+    // 予測更新関数
+    private func updatePredictions() {
+        if selectedSegment == .monthly {
+            if let prediction = predictor.predictEndOfMonth() {
+                print("信頼度", prediction.confidence)
+                let calendar = Calendar.current
+                showLowConfidenceWarning = prediction.confidence < 0.6
+                
+                var predictionPoints: [DataPoint] = []
+                
+                if let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)),
+                   let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) {
+                    
+                    let today = Date()
+                    
+                    // 実績データの最後の値を取得（スタート地点として使用）
+                    let lastActualData = displayData.last ?? DataPoint(date: today, wifi: 0, wwan: 0)
+                    
+                    let daysRemaining = calendar.dateComponents([.day], from: today, to: endOfMonth).day ?? 0
+                    guard daysRemaining > 0 else { return }
+                    
+                    // 1日あたりの予測増加量を計算
+                    let daysInMonth = calendar.range(of: .day, in: .month, for: currentDate)?.count ?? 30
+                    let dailyWifiIncrease = prediction.predictedWifi / Double(daysInMonth)
+                    let dailyWwanIncrease = prediction.predictedWwan / Double(daysInMonth)
+                    
+                    // 実績値からスタート
+                    var accumulatedWifi = lastActualData.wifi
+                    var accumulatedWwan = lastActualData.wwan
+                    var currentDate = today
+                    
+                    // 今日のデータポイントを追加（実績とのつながりを表現）
+                    predictionPoints.append(DataPoint(
+                        date: today,
+                        wifi: accumulatedWifi,
+                        wwan: accumulatedWwan
+                    ))
+                    
+                    // 翌日から予測開始
+                    if let nextDay = calendar.date(byAdding: .day, value: 1, to: today) {
+                        currentDate = nextDay
+                    }
+                    
+                    while currentDate <= endOfMonth {
+                        // 累積値を更新
+                        accumulatedWifi += dailyWifiIncrease
+                        accumulatedWwan += dailyWwanIncrease
+                        
+                        predictionPoints.append(DataPoint(
+                            date: currentDate,
+                            wifi: accumulatedWifi,
+                            wwan: accumulatedWwan
+                        ))
+                        
+                        if let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) {
+                            currentDate = nextDate
+                        } else {
+                            break
+                        }
+                    }
+                }
+                
+                predictionData = predictionPoints
+            }
+        } else {
+            predictionData = []
+            showLowConfidenceWarning = false
+        }
+    }
 }
 
 // MARK: - Supporting Views
@@ -731,5 +875,15 @@ struct VerticalSummaryCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(radius: 1)
         )
+    }
+}
+
+extension Calendar {
+    func startOfDay(for date: Date) -> Date {
+        return self.date(bySettingHour: 0, minute: 0, second: 0, of: date) ?? date
+    }
+    
+    func endOfDay(for date: Date) -> Date {
+        return self.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
     }
 }

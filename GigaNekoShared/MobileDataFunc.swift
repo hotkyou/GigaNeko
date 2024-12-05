@@ -61,7 +61,7 @@ func saveDataUsage() {
     }
     
     // 過去との差が0か
-    if wifiDifference != 0 && wwanDifference != 0 {
+    if wifiDifference != 0 || wwanDifference != 0 {
         // 差DBに入れるためのデータ
         let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
         let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
