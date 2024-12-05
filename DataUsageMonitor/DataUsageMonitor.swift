@@ -62,7 +62,7 @@ struct Provider: AppIntentTimelineProvider {
             wwan: wwan
         )
         
-        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date()) ?? Date()
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 50, to: Date()) ?? Date()
         
         return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
