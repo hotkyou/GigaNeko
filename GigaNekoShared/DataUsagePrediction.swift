@@ -5,8 +5,8 @@ struct UsagePredictionResult {
     let predictedWifi: Double    // GB単位
     let predictedWwan: Double    // GB単位
     let confidence: Double       // 予測の信頼度
-    let peakHours: [Int]        // ピーク時間帯
-    let isUnusualPattern: Bool  // 通常と異なるパターンかどうか
+    let peakHours: [Int]         // ピーク時間帯
+    let isUnusualPattern: Bool   // 通常と異なるパターンかどうか
 }
 
 class DataUsagePredictor {
@@ -18,7 +18,6 @@ class DataUsagePredictor {
         wwan: 0.3   // 300MB
     )
     
-    // 単純な移動平均とパターンマッチングを使用した予測
     func predictEndOfMonth() -> UsagePredictionResult? {
         guard let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] else {
             return createDefaultPrediction()
@@ -29,26 +28,37 @@ class DataUsagePredictor {
             return createDefaultPrediction()
         }
         
-        // 直近のデータを使用して予測
-        let recentData = dataUsageArray.suffix(24 * 7) // 直近1週間のデータ
+        // すべての利用可能なデータを使用
+        let allData = dataUsageArray
         
         var totalWifi: Double = 0
         var totalWwan: Double = 0
         var hourlyUsage: [Int: (wifi: Double, wwan: Double)] = [:]
+        var weekdayUsage: [Int: (wifi: Double, wwan: Double)] = [:]
         
-        // 時間帯ごとの平均使用量を計算
-        for entry in recentData {
+        let calendar = Calendar.current
+        
+        // 時間帯ごとと曜日ごとの平均使用量を計算
+        for entry in allData {
             guard let date = entry["date"] as? Date,
                   let wifi = entry["wifi"] as? UInt64,
                   let wwan = entry["wwan"] as? UInt64 else {
                 continue
             }
             
-            let hour = Calendar.current.component(.hour, from: date)
+            let hour = calendar.component(.hour, from: date)
+            let weekday = calendar.component(.weekday, from: date)
+            
             let currentHourly = hourlyUsage[hour] ?? (wifi: 0, wwan: 0)
             hourlyUsage[hour] = (
                 wifi: currentHourly.wifi + Double(wifi),
                 wwan: currentHourly.wwan + Double(wwan)
+            )
+            
+            let currentWeekday = weekdayUsage[weekday] ?? (wifi: 0, wwan: 0)
+            weekdayUsage[weekday] = (
+                wifi: currentWeekday.wifi + Double(wifi),
+                wwan: currentWeekday.wwan + Double(wwan)
             )
             
             totalWifi += Double(wifi)
@@ -56,24 +66,38 @@ class DataUsagePredictor {
         }
         
         // 1日あたりの平均使用量を計算（GB単位）
-        let daysCount = Double(recentData.count) / 24.0
+        let daysCount = Double(allData.count) / 24.0
         let avgDailyWifi = (totalWifi / daysCount) / (1024 * 1024 * 1024)
         let avgDailyWwan = (totalWwan / daysCount) / (1024 * 1024 * 1024)
         
         // 月末までの残り日数を計算
-        let calendar = Calendar.current
         let now = Date()
         guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1),
-                                          to: calendar.startOfMonth(for: now)) else {
+                                             to: calendar.startOfMonth(for: now)) else {
             return nil
         }
         
         let remainingDays = calendar.dateComponents([.day], from: now, to: endOfMonth).day ?? 0
         
-        // 直近の傾向を反映した予測値の計算
-        let recentTrend = calculateRecentTrend(from: Array(recentData))
-        let predictedWifi = avgDailyWifi * Double(remainingDays) * recentTrend.wifi
-        let predictedWwan = avgDailyWwan * Double(remainingDays) * recentTrend.wwan
+        // 曜日ごとの使用パターンを考慮した予測
+        var predictedWifi: Double = 0
+        var predictedWwan: Double = 0
+        
+        for day in 0..<remainingDays {
+            let futureDate = calendar.date(byAdding: .day, value: day, to: now)!
+            let weekday = calendar.component(.weekday, from: futureDate)
+            let avgWeekdayUsage = weekdayUsage[weekday] ?? (wifi: avgDailyWifi * (1024 * 1024 * 1024), wwan: avgDailyWwan * (1024 * 1024 * 1024))
+            
+            let weekdayFactor: Double = (weekday == 1 || weekday == 7) ? 1.2 : 1.0 // 週末は20%増
+            
+            predictedWifi += (avgWeekdayUsage.wifi / (1024 * 1024 * 1024)) * weekdayFactor
+            predictedWwan += (avgWeekdayUsage.wwan / (1024 * 1024 * 1024)) * weekdayFactor
+        }
+        
+        // 直近の傾向を反映
+        let recentTrend = calculateRecentTrend(from: allData)
+        predictedWifi *= recentTrend.wifi
+        predictedWwan *= recentTrend.wwan
         
         // ピーク時間を特定
         let peakHours = hourlyUsage
@@ -82,20 +106,19 @@ class DataUsagePredictor {
             .map { $0.key }
         
         // 通常パターンとの比較（20%以上の増加を異常とみなす）
-        let isUnusual = (predictedWifi + predictedWwan) > (avgDailyWifi + avgDailyWwan) * 1.2
+        let isUnusual = (predictedWifi + predictedWwan) > (avgDailyWifi + avgDailyWwan) * Double(remainingDays) * 1.2
         
         return UsagePredictionResult(
             predictedWifi: predictedWifi,
             predictedWwan: predictedWwan,
-            confidence: calculateConfidence(dataCount: dataUsageArray.count),
+            confidence: calculateConfidence(dataCount: allData.count),
             peakHours: peakHours,
             isUnusualPattern: isUnusual
         )
     }
     
-    // 信頼度の計算
+    // 信頼度の計算（変更なし）
     private func calculateConfidence(dataCount: Int) -> Double {
-        // データ量に基づいて信頼度を計算
         if dataCount < 72 { // 3日未満
             return 0.3
         } else if dataCount < 168 { // 1週間未満
@@ -107,7 +130,7 @@ class DataUsagePredictor {
         }
     }
     
-    // 直近の傾向を計算
+    // 直近の傾向を計算（変更なし）
     private func calculateRecentTrend(from data: [[String: Any]]) -> (wifi: Double, wwan: Double) {
         let recentDays = Array(data.suffix(72)) // 直近3日間
         let previousDays = Array(data.prefix(72)) // 1週間前の3日間
@@ -143,7 +166,7 @@ class DataUsagePredictor {
         let now = Date()
         
         guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1),
-                                          to: calendar.startOfMonth(for: now)) else {
+                                             to: calendar.startOfMonth(for: now)) else {
             return createPredictionWithDays(30)
         }
         
