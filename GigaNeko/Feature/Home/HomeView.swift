@@ -82,6 +82,8 @@ struct HomeView: View {
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
     private let dragThreshold: CGFloat = 20.0  // ドラッグ判定の閾値
     
+    @EnvironmentObject var pointSystem: PointSystem
+    
     // 初回起動時の処理を行うための初期化
     init() {
         let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
@@ -271,7 +273,7 @@ struct HomeView: View {
                                             Image("Point")
                                                 .resizable()
                                                 .frame(width: 16, height: 16)
-                                            Text("3,000")
+                                            Text("\(pointSystem.currentPoints)")
                                                 .foregroundColor(.gray)
                                                 .font(.system(size: 14, weight: .medium))
                                             Text("pt")
@@ -643,5 +645,6 @@ struct HomeView: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
+            .environmentObject(PointSystem())
     }
 }
