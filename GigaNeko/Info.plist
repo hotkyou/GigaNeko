@@ -4,8 +4,8 @@
 <dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>hotkyou.GigaNeko.refresh</string>
-		<string>hotkyou.GigaNeko.process</string>
+		<string>mizuhara.GigaNeko</string>
+		<string>mizuhara.GigaNeko</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
