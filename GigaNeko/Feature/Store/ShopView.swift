@@ -8,23 +8,23 @@
 import SwiftUI
 
 struct ShopView: View {
-    @ObservedObject var pointSystem: PointSystem // PointSystemを受け取る
-    
+    @EnvironmentObject var pointSystem: PointSystem // PointSystemを受け取る
+    @StateObject private var storeSystem = StoreSystem() // 初期化時は空のStoreSystem
+
     let products = [
         ("普通の餌", 0),
         ("猫缶", 100),
         ("刺身", 200),
         ("またたび", 900)
     ]
-    
+
     let columns = [
         GridItem(.flexible(minimum: 120)),
         GridItem(.flexible(minimum: 120)),
         GridItem(.flexible(minimum: 120))
     ]
-    
+
     var body: some View {
-        let storeSystem = StoreSystem(pointSystem: pointSystem)
         ZStack {
             Image("Background")
                 .resizable()
@@ -38,7 +38,7 @@ struct ShopView: View {
                             .resizable()
                             .frame(width: 30, height: 30)
                             .padding(.leading, 10)
-                        
+
                         Text("\(pointSystem.currentPoints)")
                             .font(.system(size: 24, weight: .medium))
                             .foregroundColor(.gray)
@@ -48,13 +48,24 @@ struct ShopView: View {
                     .background(Color.white)
                     .cornerRadius(12)
                     .padding()
-                    //テストボタン(消す)
+                }
+                
+                HStack {
+                    Spacer()
                     HStack {
+                        Image("Point")
+                            .resizable()
+                            .frame(width: 30, height: 30)
+                            .padding(.leading, 10)
                         Button("test"){
                             pointSystem.test()
                         }
-                        .background()
+                           
                     }
+                    .frame(height: 50)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .padding()
                 }
                 
                 VStack {
@@ -82,18 +93,18 @@ struct ShopView: View {
                             }
                         }
                         .padding()
-                        
+
                         ScrollView {
                             Group {
                                 SectionHeader(title: "えさ", id: "えさ")
                                 ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
-                                
+
                                 SectionHeader(title: "おもちゃ", id: "おもちゃ")
                                 ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
-                                
+
                                 SectionHeader(title: "プレゼント", id: "プレゼント")
                                 ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
-                                
+
                                 SectionHeader(title: "ポイント", id: "ポイント")
                                 ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
                             }
@@ -102,8 +113,11 @@ struct ShopView: View {
                 }
                 .background(Color.white)
                 .cornerRadius(10)
-                
-            }.padding(.horizontal, 64)
+            }
+            .padding(.horizontal, 64)
+        }
+        .onAppear {
+            storeSystem.updatePointSystem(pointSystem: pointSystem)
         }
     }
 }
@@ -123,6 +137,7 @@ struct SectionHeader: View {
 }
 
 #Preview {
-    let pointSystem = PointSystem() // PointSystemのインスタンスを作成
-    ShopView(pointSystem: pointSystem)
+    let pointSystem = PointSystem()
+        return ShopView()
+            .environmentObject(pointSystem)
 }
