@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 import Foundation
 
-// MARK: - 列挙型と構造体
+// MARK: - Base Types
 enum TimeSegment: String, CaseIterable {
     case daily = "日"
     case weekly = "週"
@@ -33,17 +33,19 @@ struct DataPoint: Identifiable {
     var total: Double { wifi + wwan }
 }
 
-// MARK: - StatisticsView
+// MARK: - Main View
 struct StatisticsView: View {
     // MARK: - Properties
     @State private var selectedSegment: TimeSegment = .daily
-    @State private var selectedTab: String = "グラフ"
+    @State private var selectedTab: String = "モバイル"
     @State private var currentDate = Date()
     @State private var selectedDataPoint: DataPoint?
     @State private var selectedLocation: CGPoint = .zero
     @State private var isDragging: Bool = false
-    
     @State private var dataLimit: Int = UserDefaults.shared.integer(forKey: "dataNumber")
+    @State private var predictionData: [DataPoint] = []
+    @State private var showLowConfidenceWarning = false
+    private let predictor = DataUsagePredictor.shared
     
     private let calendar = Calendar.current
     
@@ -53,664 +55,9 @@ struct StatisticsView: View {
         return formatter.string(from: currentDate) + "の使用状況"
     }
     
-    // MARK: - Computed Properties
-    private var weekStartDate: Date {
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)
-        return calendar.date(from: components) ?? currentDate
-    }
-    
-    private var displayData: [DataPoint] {
-        switch selectedSegment {
-        case .daily:
-            return loadHourlyData()
-        case .weekly:
-            return loadWeeklyData()
-        case .monthly:
-            return loadMonthlyData()
-        }
-    }
-    
-    private var statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
-        // 実績データ
-        let relevantData: [DataPoint]
-        switch selectedSegment {
-        case .daily:
-            relevantData = loadHourlyData()
-        case .weekly:
-            relevantData = loadWeeklyData()
-        case .monthly:
-            relevantData = loadMonthlyData()
-        }
-        
-        let totalWifi = relevantData.reduce(0) { $0 + $1.wifi }
-        let totalWwan = relevantData.reduce(0) { $0 + $1.wwan }
-        
-        // 予測データも含めて最大値を計算
-        var maxTotal = relevantData.map(\.total).max() ?? 0
-        if selectedSegment == .monthly {
-            let predictionMax = predictionData.map(\.total).max() ?? 0
-            maxTotal = max(maxTotal, predictionMax)
-        }
-        
-        return (totalWifi, totalWwan, maxTotal)
-    }
-    
-    private var monthlyStatistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
-        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
-            return (0, 0, 0)
-        }
-        
-        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
-        
-        let totalWifi = monthlyData.reduce(0) { $0 + Double($1.wifi) / 1024 / 1024 / 1024 }
-        let totalWwan = monthlyData.reduce(0) { $0 + Double($1.wwan) / 1024 / 1024 / 1024 }
-        let maxTotal = monthlyData.map { Double($0.wifi + $0.wwan) / 1024 / 1024 / 1024 }.max() ?? 0
-        
-        return (totalWifi, totalWwan, maxTotal)
-    }
-    
-    private let selectionColors = (
-        ruleLine: Color.orange.opacity(0.3),
-        background: Color(.systemGray6).opacity(0.95),
-        border: Color.orange.opacity(0.3)
-    )
-    
-    @State private var predictionData: [DataPoint] = []
-    @State private var showLowConfidenceWarning = false
-    private let predictor = DataUsagePredictor.shared
-
-    // MARK: - Body
-    var body: some View {
-        ZStack {
-            Image("StaticBackGround")
-                .edgesIgnoringSafeArea(.all)
-            
-            VStack {
-                HStack(spacing: 20) {
-                    Text("グラフ")
-                        .font(.system(size: 16, weight: selectedTab == "グラフ" ? .bold : .regular))
-                        .foregroundColor(selectedTab == "グラフ" ? .primary : .gray)
-                        .padding(.leading, 10)
-                        .padding(.horizontal, 14)
-                        .cornerRadius(8)
-                        .onTapGesture {
-                            selectedTab = "グラフ"
-                        }
-                    Text("りれき")
-                        .font(.system(size: 16, weight: selectedTab == "りれき" ? .bold : .regular))
-                        .foregroundColor(selectedTab == "りれき" ? .primary : .gray)
-                        .padding(.leading, 10)
-                        .cornerRadius(8)
-                        .onTapGesture {
-                            selectedTab = "りれき"
-                        }
-                }
-                .padding(.top, 92)
-                .padding(.bottom, 20)
-                
-                if selectedTab == "グラフ" {
-                    VStack(spacing: 8) {
-                        // グラフのヘッダー
-                        HStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.orange.opacity(0.3))
-                                .frame(width: 5, height: 18)
-                            
-                            Text("データ使用量")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 40)
-                                .padding(.vertical, 5)
-                                .background(Color.orange.opacity(0.3))
-                                .cornerRadius(10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .padding(.horizontal, 30)
-                        
-                        // セグメントコントロール
-                        HStack(spacing: 20) {
-                            ForEach(TimeSegment.allCases, id: \.self) { segment in
-                                SegmentButton(
-                                    title: segment.rawValue,
-                                    isSelected: selectedSegment == segment
-                                ) {
-                                    selectedSegment = segment
-                                }
-                            }
-                        }
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(20)
-                        
-                        // 日付ナビゲーション
-                        HStack {
-                            NavigationButton(systemName: "chevron.left") {
-                                moveDate(by: -1)
-                            }
-                            
-                            Spacer()
-                            
-                            Text(formattedDate)
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            
-                            Spacer()
-                            
-                            NavigationButton(systemName: "chevron.right") {
-                                moveDate(by: 1)
-                            }
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.orange.opacity(0.2))
-                        .cornerRadius(15)
-                        
-                        // グラフ部分
-                        ZStack(alignment: .top) {
-                            Chart {
-                                ForEach(displayData) { item in
-                                    LineMark(
-                                        x: .value("Date", item.date),
-                                        y: .value("WiFi", item.wifi)
-                                    )
-                                    .foregroundStyle(by: .value("Type", "実績\nWiFi"))
-                                    .interpolationMethod(.linear)
-                                    
-                                    LineMark(
-                                        x: .value("Date", item.date),
-                                        y: .value("Mobile", item.wwan)
-                                    )
-                                    .foregroundStyle(by: .value("Type", "実績\nモバイル"))
-                                    .interpolationMethod(.linear)
-                                }
-
-                                if selectedSegment == .monthly {
-                                    ForEach(predictionData) { item in
-                                        LineMark(
-                                            x: .value("Date", item.date),
-                                            y: .value("WiFi予測", item.wifi)
-                                        )
-                                        .foregroundStyle(by: .value("Type", "予測\nWiFi"))
-                                        .interpolationMethod(.linear)
-                                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
-                                        
-                                        LineMark(
-                                            x: .value("Date", item.date),
-                                            y: .value("モバイル予測", item.wwan)
-                                        )
-                                        .foregroundStyle(by: .value("Type", "予測\nモバイル"))
-                                        .interpolationMethod(.linear)
-                                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
-                                    }
-                                }
-                                
-                                if let selectedPoint = selectedDataPoint {
-                                    RuleMark(x: .value("Selected", selectedPoint.date))
-                                        .foregroundStyle(selectionColors.ruleLine)
-                                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
-                                    
-                                    PointMark(
-                                        x: .value("Date", selectedPoint.date),
-                                        y: .value("WiFi", selectedPoint.wifi)
-                                    )
-                                    .foregroundStyle(Color.green)
-                                    .symbolSize(80)
-                                    
-                                    PointMark(
-                                        x: .value("Date", selectedPoint.date),
-                                        y: .value("Mobile", selectedPoint.wwan)
-                                    )
-                                    .foregroundStyle(Color.orange)
-                                    .symbolSize(80)
-                                }
-                            }
-                            .chartForegroundStyleScale([
-                                "実績\nWiFi": Color.green,
-                                "実績\nモバイル": Color.orange,
-                                "予測\nWiFi": Color.green.opacity(0.5),
-                                "予測\nモバイル": Color.orange.opacity(0.5)
-                            ])
-                            .chartLegend(position: .bottom, alignment: .center)
-                            .chartXScale(domain: getChartDateRange())
-                            .chartYScale(domain: 0...max(0.1, statistics.maxTotal * 1.2))
-                            .chartXAxis(content: customXAxis)
-                            .chartYAxis(content: customYAxis)
-                            .chartOverlay { proxy in
-                                GeometryReader { geometry in
-                                    Rectangle()
-                                        .fill(.clear)
-                                        .contentShape(Rectangle())
-                                        .gesture(
-                                            DragGesture(minimumDistance: 0)
-                                                .onChanged { value in
-                                                    if !isDragging {
-                                                        isDragging = true
-                                                    }
-                                                    let adjustedLocation = CGPoint(
-                                                        x: value.location.x - geometry.frame(in: .local).minX,
-                                                        y: value.location.y - geometry.frame(in: .local).minY
-                                                    )
-                                                    selectedLocation = adjustedLocation
-                                                    updateSelectedDataPoint(at: geometry, proxy: proxy)
-                                                }
-                                                .onEnded { _ in
-                                                    isDragging = false
-                                                    selectedDataPoint = nil
-                                                }
-                                        )
-                                }
-                            }
-                            
-                            // 警告メッセージのオーバーレイ
-                            if showLowConfidenceWarning {
-                                Text("予測の信頼性が低い可能性があります")
-                                    .font(.caption)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    .background(Color.orange.opacity(0.8))
-                                    .cornerRadius(8)
-                                    .padding(.top, 4)
-                            }
-                            
-                            if let selected = selectedDataPoint {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(formatDate(selected.date))
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundColor(.primary)
-                                    
-                                    HStack(spacing: 8) {
-                                        SelectionDataLabel(
-                                            iconName: "wifi",
-                                            value: selected.wifi,
-                                            color: .green
-                                        )
-                                        
-                                        SelectionDataLabel(
-                                            iconName: "antenna.radiowaves.left.and.right",
-                                            value: selected.wwan,
-                                            color: .orange
-                                        )
-                                        
-                                        SelectionDataLabel(
-                                            iconName: "sum",
-                                            value: selected.total,
-                                            color: .primary
-                                        )
-                                    }
-                                }
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 10)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10)
-                                        .fill(selectionColors.background)
-                                        .overlay(
-                                            RoundedRectangle(cornerRadius: 10)
-                                                .stroke(selectionColors.border, lineWidth: 1)
-                                        )
-                                )
-                                .padding(.top, 8)
-                                .transition(.opacity)
-                            }
-                        }
-                        .onAppear {
-                            updatePredictions()
-                        }
-                        .onChange(of: selectedSegment) { _ in
-                            updatePredictions()
-                        }
-                        .frame(height: 200)
-                        .padding(6)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(15)
-                        
-                        // 使用量サマリー
-                        VStack(spacing: 4) {
-                            HStack {
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.orange.opacity(0.3))
-                                    .frame(width: 5, height: 18)
-                                
-                                Text(monthTitle)
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 40)
-                                    .padding(.vertical, 3)
-                                    .background(Color.orange.opacity(0.3))
-                                    .cornerRadius(10)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .padding(.horizontal, 12)
-                            
-                            VStack(spacing: 4) {
-                                VerticalSummaryCard(
-                                    title: "使った通信量",
-                                    value: String(format: "%.1f GB", monthlyStatistics.totalWwan),
-                                    color: .orange
-                                )
-                                
-                                VerticalSummaryCard(
-                                    title: "残っている通信量",
-                                    value: String(format: "%.1f GB", max(0, Double(dataLimit) - monthlyStatistics.totalWwan)),
-                                    color: .orange
-                                )
-                                
-                                VerticalSummaryCard(
-                                    title: "Wi-Fi使用量",
-                                    value: String(format: "%.1f GB", monthlyStatistics.totalWifi),
-                                    color: .green
-                                )
-                            }
-                            .padding(.horizontal, 12)
-                        }
-                        .padding(6)
-                        .background(Color(.systemGray6))
-                        .cornerRadius(20)
-                    }
-                } else if selectedTab == "りれき" {
-                    // 履歴ビューの実装
-                    VStack(spacing: 20) {
-                        HStack {
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.green.opacity(0.3))
-                                .frame(width: 5, height: 25)
-                            
-                            Text("りれき")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 60)
-                                .padding(.vertical, 5)
-                                .background(Color.green.opacity(0.3))
-                                .cornerRadius(10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                        
-                        HStack {
-                            Text("日付")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                            Spacer()
-                            Text("通信量")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                            Spacer()
-                            Text("取得ポイント")
-                                .font(.caption)
-                                .foregroundColor(.gray)
-                        }
-                        .padding(.horizontal)
-                        
-                        ForEach(displayData.prefix(5), id: \.id) { item in
-                            HStack {
-                                Text(item.date, format: .dateTime.year().month().day())
-                                Spacer()
-                                Text(String(format: "%.2f GB", item.total))
-                                Spacer()
-                                Text(String(Int(item.total * 100)))
-                            }
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            
-                            Divider()
-                                .background(Color.gray.opacity(0.5))
-                                .padding(.horizontal)
-                        }
-                    }
-                    .padding()
-                    .cornerRadius(15)
-                    .shadow(radius: 5)
-                }
-                
-                Spacer()
-            }
-            .padding(.leading, 64)
-            .padding(.trailing, 74)
-        }
-        .toolbar(.hidden, for: .tabBar)
-        .onAppear {
-            // ビューが表示されるたびにUserDefaultsから制限値を読み込む
-            dataLimit = UserDefaults.shared.integer(forKey: "dataNumber")
-            // デフォルト値の設定（値が0の場合）
-            if dataLimit == 0 {
-                dataLimit = 7 // デフォルト値
-            }
-        }
-    }
-    
-    // MARK: - Helper Methods
-    private func updateSelectedDataPoint(at geometry: GeometryProxy, proxy: ChartProxy) {
-            // プロキシの座標空間内でX位置を計算
-        let xPosition = selectedLocation.x
-        
-        guard let date = proxy.value(atX: xPosition, as: Date.self) else { return }
-        
-        // 最も近いデータポイントを見つける
-        var closestPoint: DataPoint?
-        var minDistance: TimeInterval = .infinity
-        
-        for point in displayData {
-            let distance = abs(point.date.timeIntervalSince(date))
-            if distance < minDistance {
-                minDistance = distance
-                closestPoint = point
-            }
-        }
-        
-        // 選択されたデータポイントを更新
-        if isDragging {
-            selectedDataPoint = closestPoint
-        }
-    }
-    
-    public func loadHourlyData() -> [DataPoint] {
-        let hourlyData = loadHourlyDataUsage(for: currentDate)
-        return hourlyData.map { usage in
-            let date = calendar.date(bySettingHour: usage.hour, minute: 0, second: 0, of: currentDate) ?? currentDate
-            return DataPoint(
-                date: date,
-                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
-                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
-            )
-        }
-    }
-    
-    public func loadWeeklyData() -> [DataPoint] {
-        let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
-        return weeklyData.map { usage in
-            let date = calendar.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
-            return DataPoint(
-                date: date,
-                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
-                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
-            )
-        }
-    }
-    
-    public func loadMonthlyData() -> [DataPoint] {
-        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
-            return []
-        }
-        
-        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
-        var accumulatedWifi: Double = 0
-        var accumulatedWwan: Double = 0
-        let today = Date()
-        let endOfToday = calendar.endOfDay(for: today)
-        
-        // 先にデータポイントを生成
-        let allDataPoints = monthlyData.compactMap { usage -> DataPoint? in
-            guard let date = calendar.date(byAdding: .day, value: usage.day - 1, to: startOfMonth) else {
-                return nil
-            }
-            
-            // 未来のデータは累積せずに現在の値を維持
-            if date > calendar.startOfDay(for: today) {
-                return DataPoint(
-                    date: date,
-                    wifi: accumulatedWifi,
-                    wwan: accumulatedWwan
-                )
-            }
-            
-            // 現在までのデータは累積
-            accumulatedWifi += Double(usage.wifi) / 1024 / 1024 / 1024
-            accumulatedWwan += Double(usage.wwan) / 1024 / 1024 / 1024
-            
-            return DataPoint(
-                date: date,
-                wifi: accumulatedWifi,
-                wwan: accumulatedWwan
-            )
-        }
-        
-        // フィルタリングを別途実行
-        return allDataPoints.filter { $0.date <= endOfToday }
-    }
-    
-    private func moveDate(by value: Int) {
-        if let newDate = calendar.date(byAdding: selectedSegment.calendarComponent, value: value, to: currentDate) {
-            currentDate = newDate
-        }
-    }
-    
-    private func getChartDateRange() -> ClosedRange<Date> {
-        switch selectedSegment {
-        case .daily:
-            let startDate = calendar.startOfDay(for: currentDate)
-            guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) else {
-                return startDate...startDate
-            }
-            return startDate...endDate
-            
-        case .weekly:
-            let startDate = weekStartDate
-            guard let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) else {
-                return startDate...startDate
-            }
-            guard let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endDate) else {
-                return startDate...startDate
-            }
-            return startDate...endOfDay
-            
-        case .monthly:
-            guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
-                return currentDate...currentDate
-            }
-            guard let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
-                return startOfMonth...startOfMonth
-            }
-            guard let endOfDay = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: endOfMonth) else {
-                return startOfMonth...startOfMonth
-            }
-            return startOfMonth...endOfDay
-        }
-    }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        switch selectedSegment {
-        case .daily:
-            formatter.dateFormat = "H時"
-        case .weekly:
-            formatter.dateFormat = "M/d (E)"
-            formatter.locale = Locale(identifier: "ja_JP")
-        case .monthly:
-            formatter.dateFormat = "M/d"
-        }
-        return formatter.string(from: date)
-    }
-    
-    private func customXAxis() -> some AxisContent {
-        AxisMarks(preset: .aligned, values: .stride(by: selectedSegment.strideComponent)) { value in
-            if let date = value.as(Date.self) {
-                let shouldShowLabel: Bool = {
-                    switch selectedSegment {
-                    case .daily:
-                        let hour = calendar.component(.hour, from: date)
-                        return hour % 3 == 0
-                    case .weekly:
-                        let weekday = calendar.component(.weekday, from: date)
-                        return weekday >= 1 && weekday <= 7
-                    case .monthly:
-                        let day = calendar.component(.day, from: date)
-                        let isLastDayOfMonth = calendar.isDate(date, equalTo: getChartDateRange().upperBound, toGranularity: .day)
-                        
-                        if day >= 30 {
-                            return isLastDayOfMonth
-                        }
-                        return day % 5 == 0 || day == 1
-                    }
-                }()
-                
-                if shouldShowLabel {
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1))
-                        .foregroundStyle(Color.gray.opacity(0.5))
-                    AxisTick(stroke: StrokeStyle(lineWidth: 1.5))
-                    AxisValueLabel {
-                        switch selectedSegment {
-                        case .daily:
-                            let hour = calendar.component(.hour, from: date)
-                            Text("\(hour)")
-                                .font(.caption)
-                        case .weekly:
-                            Text(date, format: .dateTime.weekday(.abbreviated))
-                                .font(.caption)
-                        case .monthly:
-                            let day = calendar.component(.day, from: date)
-                            Text("\(day)")
-                                .font(.caption)
-                        }
-                    }
-                } else {
-                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
-                        .foregroundStyle(Color.gray.opacity(0.2))
-                }
-            }
-        }
-    }
-    
-    private func customYAxis() -> some AxisContent {
-        AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
-            AxisGridLine()
-            AxisTick()
-            AxisValueLabel {
-                if let doubleValue = value.as(Double.self) {
-                    Text(String(format: "%.1f GB", doubleValue))
-                        .font(.caption)
-                }
-            }
-        }
-    }
-    
-    private var formattedDate: String {
-        let formatter = DateFormatter()
-        switch selectedSegment {
-        case .daily:
-            formatter.dateFormat = "yyyy年M月d日"
-            return formatter.string(from: currentDate)
-            
-        case .weekly:
-            formatter.dateFormat = "yyyy年M月d日"
-            let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStartDate) ?? currentDate
-            let endFormatter = DateFormatter()
-            endFormatter.dateFormat = "d日"
-            return "\(formatter.string(from: weekStartDate)) - \(endFormatter.string(from: weekEnd))"
-            
-        case .monthly:
-            formatter.dateFormat = "yyyy年M月"
-            return formatter.string(from: currentDate)
-        }
-    }
-    
-    // 予測更新関数
     private func updatePredictions() {
         if selectedSegment == .monthly {
             if let prediction = predictor.predictEndOfMonth() {
-                print("信頼度", prediction.confidence)
-                let calendar = Calendar.current
                 showLowConfidenceWarning = prediction.confidence < 0.6
                 
                 var predictionPoints: [DataPoint] = []
@@ -774,10 +121,591 @@ struct StatisticsView: View {
             showLowConfidenceWarning = false
         }
     }
+    
+    // MARK: - Body
+    var body: some View {
+        ZStack {
+            Image("StaticBackGround")
+                .edgesIgnoringSafeArea(.all)
+            
+            VStack {
+                // タブ切り替え
+                NetworkTypeTabBar(selectedTab: $selectedTab)
+                    .padding(.top, 92)
+                    .padding(.bottom, 20)
+                
+                VStack(spacing: 8) {
+                    // ヘッダー
+                    NetworkUsageHeader(selectedTab: selectedTab)
+                    
+                    // セグメントコントロール
+                    TimeSegmentControl(
+                        selectedSegment: $selectedSegment,
+                        selectedTab: selectedTab
+                    )
+                    
+                    // 日付ナビゲーション
+                    DateNavigationBar(
+                        currentDate: currentDate,
+                        selectedSegment: selectedSegment,
+                        selectedTab: selectedTab,
+                        onDateChange: moveDate
+                    )
+                    
+                    // グラフ
+                    NetworkUsageChart(
+                        displayData: displayData,
+                        predictionData: predictionData,
+                        showLowConfidenceWarning: showLowConfidenceWarning,
+                        selectedTab: selectedTab,
+                        selectedSegment: selectedSegment,
+                        currentDate: currentDate,
+                        selectedDataPoint: $selectedDataPoint,
+                        isDragging: $isDragging,
+                        selectedLocation: $selectedLocation
+                    )
+                    .frame(height: 200)
+                    .padding(6)
+                    .background(Color(.systemGray6))
+                    .cornerRadius(15)
+                    
+                    // 使用量サマリー
+                    if selectedTab == "モバイル" {
+                        MobileDataSummary(
+                            monthTitle: monthTitle,
+                            statistics: monthlyStatistics,
+                            dataLimit: dataLimit
+                        )
+                    } else {
+                        WiFiDataSummary(
+                            monthTitle: monthTitle,
+                            statistics: monthlyStatistics
+                        )
+                    }
+                }
+                
+                Spacer()
+            }
+            .padding(.leading, 64)
+            .padding(.trailing, 74)
+        }
+        .toolbar(.hidden, for: .tabBar)
+        .onAppear {
+            updatePredictions()
+        }
+        .onChange(of: selectedSegment) { _ in
+            updatePredictions()
+        }
+    }
+    
+    // MARK: - Helper Methods
+    private func moveDate(by value: Int) {
+        if let newDate = calendar.date(byAdding: selectedSegment.calendarComponent, value: value, to: currentDate) {
+            currentDate = newDate
+        }
+    }
 }
 
-// MARK: - Supporting Views
-struct SelectionDataLabel: View {
+// MARK: - Calendar Extensions
+extension Calendar {
+    func startOfDay(for date: Date) -> Date {
+        return self.date(bySettingHour: 0, minute: 0, second: 0, of: date) ?? date
+    }
+    
+    func endOfDay(for date: Date) -> Date {
+        return self.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
+    }
+}
+
+// MARK: - Tab Bar Component
+struct NetworkTypeTabBar: View {
+    @Binding var selectedTab: String
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            TabButton(
+                title: "モバイル",
+                isSelected: selectedTab == "モバイル",
+                color: .orange
+            ) {
+                selectedTab = "モバイル"
+            }
+            
+            TabButton(
+                title: "WiFi",
+                isSelected: selectedTab == "WiFi",
+                color: .green
+            ) {
+                selectedTab = "WiFi"
+            }
+        }
+    }
+}
+
+struct TabButton: View {
+    let title: String
+    let isSelected: Bool
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 16, weight: isSelected ? .bold : .regular))
+                .foregroundColor(isSelected ? color : .gray)
+                .padding(.horizontal, 14)
+                .cornerRadius(8)
+        }
+    }
+}
+
+// MARK: - Header Components
+struct NetworkUsageHeader: View {
+    let selectedTab: String
+    
+    private var headerColor: Color {
+        selectedTab == "モバイル" ? .orange : .green
+    }
+    
+    var body: some View {
+        HStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(headerColor.opacity(0.3))
+                .frame(width: 5, height: 18)
+            
+            Text("\(selectedTab)使用量")
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 30)
+                .padding(.vertical, 5)
+                .background(headerColor.opacity(0.3))
+                .cornerRadius(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 30)
+    }
+}
+
+// MARK: - Time Segment Control
+struct TimeSegmentControl: View {
+    @Binding var selectedSegment: TimeSegment
+    let selectedTab: String
+    
+    private var segmentColor: Color {
+        selectedTab == "モバイル" ? .orange : .green
+    }
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            ForEach(TimeSegment.allCases, id: \.self) { segment in
+                SegmentButton(
+                    title: segment.rawValue,
+                    isSelected: selectedSegment == segment,
+                    color: segmentColor
+                ) {
+                    selectedSegment = segment
+                }
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(Color(.systemGray6))
+        .cornerRadius(20)
+    }
+}
+
+struct SegmentButton: View {
+    let title: String
+    let isSelected: Bool
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(isSelected ? .white : .gray)
+                .padding(.vertical, 10)
+                .padding(.horizontal, 15)
+                .background(isSelected ? color : Color.clear)
+                .cornerRadius(15)
+        }
+    }
+}
+
+// MARK: - Date Navigation Bar
+struct DateNavigationBar: View {
+    let currentDate: Date
+    let selectedSegment: TimeSegment
+    let selectedTab: String
+    let onDateChange: (Int) -> Void
+    
+    private var navigationColor: Color {
+        selectedTab == "モバイル" ? .orange : .green
+    }
+    
+    var body: some View {
+        HStack {
+            NavigationButton(
+                systemName: "chevron.left",
+                color: navigationColor
+            ) {
+                onDateChange(-1)
+            }
+            
+            Spacer()
+            
+            Text(formattedDate)
+                .font(.headline)
+                .foregroundColor(.white)
+            
+            Spacer()
+            
+            NavigationButton(
+                systemName: "chevron.right",
+                color: navigationColor
+            ) {
+                onDateChange(1)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(navigationColor.opacity(0.2))
+        .cornerRadius(15)
+    }
+    
+    private var formattedDate: String {
+        let formatter = DateFormatter()
+        let calendar = Calendar.current
+        
+        switch selectedSegment {
+        case .daily:
+            formatter.dateFormat = "yyyy年M月d日"
+            return formatter.string(from: currentDate)
+            
+        case .weekly:
+            formatter.dateFormat = "yyyy年M月d日"
+            let weekStart = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)) ?? currentDate
+            let weekEnd = calendar.date(byAdding: .day, value: 6, to: weekStart) ?? currentDate
+            let endFormatter = DateFormatter()
+            endFormatter.dateFormat = "d日"
+            return "\(formatter.string(from: weekStart)) - \(endFormatter.string(from: weekEnd))"
+            
+        case .monthly:
+            formatter.dateFormat = "yyyy年M月"
+            return formatter.string(from: currentDate)
+        }
+    }
+}
+
+struct NavigationButton: View {
+    let systemName: String
+    let color: Color
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(color)
+                .frame(width: 32, height: 32)
+                .background(
+                    Circle()
+                        .fill(color.opacity(0.2))
+                )
+        }
+    }
+}
+
+// MARK: - Network Usage Chart
+struct NetworkUsageChart: View {
+    let displayData: [DataPoint]
+    let predictionData: [DataPoint]
+    let showLowConfidenceWarning: Bool
+    let selectedTab: String
+    let selectedSegment: TimeSegment
+    let currentDate: Date
+    private let predictor = DataUsagePredictor.shared
+    @Binding var selectedDataPoint: DataPoint?
+    @Binding var isDragging: Bool
+    @Binding var selectedLocation: CGPoint
+    
+    private let calendar = Calendar.current
+    
+    private var chartColor: Color {
+        selectedTab == "モバイル" ? .orange : .green
+    }
+    
+    private var weekStartDate: Date {
+        calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)) ?? currentDate
+    }
+    
+    var body: some View {
+        ZStack(alignment: .top) {
+            Chart {
+                ForEach(displayData) { item in
+                    LineMark(
+                        x: .value("Date", item.date),
+                        y: .value("Usage", selectedTab == "モバイル" ? item.wwan : item.wifi)
+                    )
+                    .foregroundStyle(by: .value("Type", "実績"))
+                    .interpolationMethod(.linear)
+                }
+                
+                if selectedSegment == .monthly {
+                    ForEach(predictionData) { item in
+                        LineMark(
+                            x: .value("Date", item.date),
+                            y: .value("Usage", selectedTab == "モバイル" ? item.wwan : item.wifi)
+                        )
+                        .foregroundStyle(by: .value("Type", "予測"))
+                        .interpolationMethod(.linear)
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                    }
+                }
+                
+                if let selectedPoint = selectedDataPoint {
+                    RuleMark(x: .value("Selected", selectedPoint.date))
+                        .foregroundStyle(chartColor.opacity(0.3))
+                        .lineStyle(StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
+                    
+                    PointMark(
+                        x: .value("Date", selectedPoint.date),
+                        y: .value("Usage", selectedTab == "モバイル" ? selectedPoint.wwan : selectedPoint.wifi)
+                    )
+                    .foregroundStyle(chartColor)
+                    .symbolSize(80)
+                }
+            }
+            .chartForegroundStyleScale([
+                "実績": chartColor,
+                "予測": chartColor.opacity(0.5)
+            ])
+            .chartXScale(domain: getChartDateRange())
+            .chartYScale(domain: 0...getMaxValue())
+            .chartXAxis(content: customXAxis)
+            .chartYAxis(content: customYAxis)
+            .chartOverlay { proxy in
+                GeometryReader { geometry in
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    let frame = geometry.frame(in: .local)
+                                    let location = CGPoint(
+                                        x: value.location.x - frame.minX,
+                                        y: value.location.y - frame.minY
+                                    )
+                                    
+                                    // チャートの範囲内かチェック
+                                    guard location.x >= 0,
+                                          location.x <= frame.width,
+                                          location.y >= 0,
+                                          location.y <= frame.height,
+                                          let date = proxy.value(atX: location.x, as: Date.self) else {
+                                        return
+                                    }
+                                    
+                                    if !isDragging {
+                                        isDragging = true
+                                    }
+                                    selectedLocation = location
+                                    
+                                    // 最も近いデータポイントを見つける
+                                    var closestPoint: DataPoint?
+                                    var minDistance: TimeInterval = .infinity
+                                    
+                                    let allData = selectedSegment == .monthly ?
+                                        displayData + predictionData : displayData
+                                    
+                                    for point in allData {
+                                        let distance = abs(point.date.timeIntervalSince(date))
+                                        if distance < minDistance {
+                                            minDistance = distance
+                                            closestPoint = point
+                                        }
+                                    }
+                                    
+                                    if isDragging {
+                                        selectedDataPoint = closestPoint
+                                    }
+                                }
+                                .onEnded { _ in
+                                    isDragging = false
+                                    selectedDataPoint = nil
+                                }
+                        )
+                }
+            }
+            
+            if showLowConfidenceWarning && selectedSegment == .monthly {
+                Text("予測の信頼性が低い可能性があります")
+                    .font(.caption)
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .background(Color.orange.opacity(0.8))
+                    .cornerRadius(8)
+                    .padding(.top, 4)
+            }
+            
+            if let selected = selectedDataPoint {
+                let isFromPrediction = selectedSegment == .monthly &&
+                    predictionData.contains(where: { $0.date == selected.date })
+                
+                DataSelectionTooltip(
+                    dataPoint: selected,
+                    selectedTab: selectedTab,
+                    chartColor: chartColor,
+                    selectedSegment: selectedSegment,
+                    isPrediction: isFromPrediction,
+                    predictionDetails: isFromPrediction ? predictor.predictEndOfMonth() : nil
+                )
+                .padding(.top, 8)
+                .transition(.opacity)
+            }
+        }
+    }
+    
+    private func getChartDateRange() -> ClosedRange<Date> {
+        switch selectedSegment {
+        case .daily:
+            let startDate = calendar.startOfDay(for: currentDate)
+            guard let endDate = calendar.date(byAdding: .day, value: 1, to: startDate) else {
+                return startDate...startDate
+            }
+            return startDate...endDate
+            
+        case .weekly:
+            let startDate = weekStartDate
+            guard let endDate = calendar.date(byAdding: .day, value: 6, to: startDate) else {
+                return startDate...startDate
+            }
+            return startDate...calendar.endOfDay(for: endDate)
+            
+        case .monthly:
+            guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)),
+                  let endOfMonth = calendar.date(byAdding: DateComponents(month: 1, day: -1), to: startOfMonth) else {
+                return currentDate...currentDate
+            }
+            return startOfMonth...calendar.endOfDay(for: endOfMonth)
+        }
+    }
+    
+    private func getMaxValue() -> Double {
+        var maxValue: Double = 0
+        
+        // 実績データの最大値を取得
+        let actualMax = displayData.map { selectedTab == "モバイル" ? $0.wwan : $0.wifi }.max() ?? 0
+        maxValue = max(maxValue, actualMax)
+        
+        // 予測データがある場合はその最大値も考慮
+        if selectedSegment == .monthly {
+            let predictionMax = predictionData.map { selectedTab == "モバイル" ? $0.wwan : $0.wifi }.max() ?? 0
+            maxValue = max(maxValue, predictionMax)
+        }
+        
+        return max(0.1, maxValue * 1.2)
+    }
+    
+    private func customXAxis() -> some AxisContent {
+        AxisMarks(preset: .aligned, values: .stride(by: selectedSegment.strideComponent)) { value in
+            if let date = value.as(Date.self) {
+                let shouldShowLabel: Bool = {
+                    switch selectedSegment {
+                    case .daily:
+                        let hour = calendar.component(.hour, from: date)
+                        return hour % 3 == 0
+                    case .weekly:
+                        return true // すべての日を表示
+                    case .monthly:
+                        let day = calendar.component(.day, from: date)
+                        return day % 5 == 0 || day == 1
+                    }
+                }()
+                
+                if shouldShowLabel {
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 1))
+                        .foregroundStyle(Color.gray.opacity(0.5))
+                    AxisTick(stroke: StrokeStyle(lineWidth: 1.5))
+                    AxisValueLabel {
+                        switch selectedSegment {
+                        case .daily:
+                            let hour = calendar.component(.hour, from: date)
+                            Text("\(hour)")
+                                .font(.caption)
+                        case .weekly:
+                            Text(date, format: .dateTime.weekday(.abbreviated))
+                                .font(.caption)
+                        case .monthly:
+                            let day = calendar.component(.day, from: date)
+                            Text("\(day)")
+                                .font(.caption)
+                        }
+                    }
+                } else {
+                    AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                        .foregroundStyle(Color.gray.opacity(0.2))
+                }
+            }
+        }
+    }
+    
+    private func customYAxis() -> some AxisContent {
+        AxisMarks(position: .leading, values: .automatic(desiredCount: 5)) { value in
+            AxisGridLine()
+            AxisTick()
+            AxisValueLabel {
+                if let doubleValue = value.as(Double.self) {
+                    Text(String(format: "%.1f GB", doubleValue))
+                        .font(.caption)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Selected Data Display
+struct DataPointDisplay: View {
+    let dataPoint: DataPoint
+    let selectedTab: String
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(formatDate(dataPoint.date))
+                .font(.system(size: 12, weight: .medium))
+                .foregroundColor(.primary)
+            
+            HStack(spacing: 8) {
+                DataValueLabel(
+                    iconName: selectedTab == "モバイル" ? "antenna.radiowaves.left.and.right" : "wifi",
+                    value: selectedTab == "モバイル" ? dataPoint.wwan : dataPoint.wifi,
+                    color: selectedTab == "モバイル" ? .orange : .green
+                )
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.systemGray6).opacity(0.95))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "M/d HH:mm"
+        return formatter.string(from: date)
+    }
+}
+
+struct DataValueLabel: View {
     let iconName: String
     let value: Double
     let color: Color
@@ -788,7 +716,7 @@ struct SelectionDataLabel: View {
                 .font(.system(size: 12))
                 .foregroundColor(color)
             
-            Text(String(format: "%.1fGB", value))
+            Text(String(format: "%.2f GB", value))
                 .font(.system(size: 12, weight: .medium))
                 .foregroundColor(color)
         }
@@ -796,57 +724,98 @@ struct SelectionDataLabel: View {
     }
 }
 
-// DataLabelコンポーネントの更新（グラフ凡例用）
-struct DataLabel: View {
+// MARK: - Summary Components
+struct MobileDataSummary: View {
+    let monthTitle: String
+    let statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double)
+    let dataLimit: Int
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            SummaryHeader(title: monthTitle, color: .orange)
+            
+            VStack(spacing: 4) {
+                VerticalSummaryCard(
+                    title: "使った通信量",
+                    value: String(format: "%.1f GB", statistics.totalWwan),
+                    color: .orange
+                )
+                
+                VerticalSummaryCard(
+                    title: "残っている通信量",
+                    value: String(format: "%.1f GB", max(0, Double(dataLimit) - statistics.totalWwan)),
+                    color: .orange
+                )
+                
+                VerticalSummaryCard(
+                    title: "月間制限",
+                    value: "\(dataLimit) GB",
+                    color: .orange
+                )
+            }
+            .padding(.horizontal, 12)
+        }
+        .padding(6)
+        .background(Color(.systemGray6))
+        .cornerRadius(20)
+    }
+}
+
+struct WiFiDataSummary: View {
+    let monthTitle: String
+    let statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double)
+    
+    var body: some View {
+        VStack(spacing: 4) {
+            SummaryHeader(title: monthTitle, color: .green)
+            
+            VStack(spacing: 4) {
+                VerticalSummaryCard(
+                    title: "今月の使用量",
+                    value: String(format: "%.1f GB", statistics.totalWifi),
+                    color: .green
+                )
+                
+                VerticalSummaryCard(
+                    title: "1日平均",
+                    value: String(format: "%.1f GB", statistics.totalWifi / 30),
+                    color: .green
+                )
+                
+                VerticalSummaryCard(
+                    title: "最大使用日",
+                    value: String(format: "%.1f GB", statistics.maxTotal),
+                    color: .green
+                )
+            }
+            .padding(.horizontal, 12)
+        }
+        .padding(6)
+        .background(Color(.systemGray6))
+        .cornerRadius(20)
+    }
+}
+
+struct SummaryHeader: View {
     let title: String
-    let value: Double
     let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        HStack {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(color.opacity(0.3))
+                .frame(width: 5, height: 18)
+            
             Text(title)
-                .font(.caption2)
-                .foregroundColor(color.opacity(0.8))
-            Text(String(format: "%.2f GB", value))
-                .font(.caption)
-                .foregroundColor(color)
+                .font(.headline)
+                .foregroundColor(.white)
+                .padding(.horizontal, 40)
+                .padding(.vertical, 3)
+                .background(color.opacity(0.3))
+                .cornerRadius(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-}
-
-struct SegmentButton: View {
-    let title: String
-    let isSelected: Bool
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isSelected ? .white : .gray)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 15)
-                .background(isSelected ? Color.orange : Color.clear)
-                .cornerRadius(15)
-        }
-    }
-}
-
-struct NavigationButton: View {
-    let systemName: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.orange)
-                .frame(width: 32, height: 32)
-                .background(
-                    Circle()
-                        .fill(Color.orange.opacity(0.2))
-                )
-        }
+        .padding(.horizontal, 12)
     }
 }
 
@@ -878,12 +847,273 @@ struct VerticalSummaryCard: View {
     }
 }
 
-extension Calendar {
-    func startOfDay(for date: Date) -> Date {
-        return self.date(bySettingHour: 0, minute: 0, second: 0, of: date) ?? date
+extension StatisticsView {
+    // MARK: - Data Loading Methods
+    private func loadHourlyData() -> [DataPoint] {
+        let hourlyData = loadHourlyDataUsage(for: currentDate)
+        return hourlyData.map { usage in
+            let date = calendar.date(bySettingHour: usage.hour, minute: 0, second: 0, of: currentDate) ?? currentDate
+            return DataPoint(
+                date: date,
+                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
+                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
+            )
+        }
     }
     
-    func endOfDay(for date: Date) -> Date {
-        return self.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
+    private func loadWeeklyData() -> [DataPoint] {
+        let weekStartDate = calendar.date(from: calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: currentDate)) ?? currentDate
+        let weeklyData = loadWeeklyDataUsage(for: weekStartDate)
+        
+        return weeklyData.map { usage in
+            let date = calendar.date(byAdding: .day, value: usage.day, to: weekStartDate) ?? currentDate
+            return DataPoint(
+                date: date,
+                wifi: Double(usage.wifi) / 1024 / 1024 / 1024,
+                wwan: Double(usage.wwan) / 1024 / 1024 / 1024
+            )
+        }
+    }
+    
+    private func loadMonthlyData() -> [DataPoint] {
+        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
+            return []
+        }
+        
+        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
+        var accumulatedWifi: Double = 0
+        var accumulatedWwan: Double = 0
+        
+        return monthlyData.compactMap { usage -> DataPoint? in
+            guard let date = calendar.date(byAdding: .day, value: usage.day - 1, to: startOfMonth) else {
+                return nil
+            }
+            
+            // 現在の日付までのデータのみを累積
+            if date <= Date() {
+                accumulatedWifi += Double(usage.wifi) / 1024 / 1024 / 1024
+                accumulatedWwan += Double(usage.wwan) / 1024 / 1024 / 1024
+                
+                return DataPoint(
+                    date: date,
+                    wifi: accumulatedWifi,
+                    wwan: accumulatedWwan
+                )
+            }
+            
+            return nil
+        }
+    }
+    
+    // MARK: - Statistics Calculation
+    private var displayData: [DataPoint] {
+        switch selectedSegment {
+        case .daily:
+            return loadHourlyData()
+        case .weekly:
+            return loadWeeklyData()
+        case .monthly:
+            return loadMonthlyData()
+        }
+    }
+    
+    private var monthlyStatistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double) {
+        guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
+            return (0, 0, 0)
+        }
+        
+        let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
+        
+        let totalWifi = monthlyData.reduce(0) { $0 + Double($1.wifi) / 1024 / 1024 / 1024 }
+        let totalWwan = monthlyData.reduce(0) { $0 + Double($1.wwan) / 1024 / 1024 / 1024 }
+        let maxTotal = monthlyData.map { Double($0.wifi + $0.wwan) / 1024 / 1024 / 1024 }.max() ?? 0
+        
+        return (totalWifi, totalWwan, maxTotal)
+    }
+    
+    // MARK: - Date Formatting
+    private func formatDate(_ date: Date, for segment: TimeSegment) -> String {
+        let formatter = DateFormatter()
+        switch segment {
+        case .daily:
+            formatter.dateFormat = "H時"
+        case .weekly:
+            formatter.dateFormat = "M/d (E)"
+            formatter.locale = Locale(identifier: "ja_JP")
+        case .monthly:
+            formatter.dateFormat = "M/d"
+        }
+        return formatter.string(from: date)
+    }
+}
+
+struct DataSelectionTooltip: View {
+    let dataPoint: DataPoint
+    let selectedTab: String
+    let chartColor: Color
+    let selectedSegment: TimeSegment
+    let isPrediction: Bool
+    let predictionDetails: UsagePredictionResult?
+    
+    private var usageValue: Double {
+        selectedTab == "モバイル" ? dataPoint.wwan : dataPoint.wifi
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            // ヘッダー部分
+            HStack {
+                Circle()
+                    .fill(chartColor)
+                    .frame(width: 8, height: 8)
+                
+                Text(formatDate(dataPoint.date))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.primary)
+                
+                if isPrediction {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chart.line.uptrend.xyaxis")
+                        Text("予測")
+                            .font(.system(size: 11))
+                    }
+                    .foregroundColor(chartColor.opacity(0.7))
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(chartColor.opacity(0.1))
+                    )
+                }
+            }
+            
+            Divider()
+                .background(chartColor.opacity(0.3))
+            
+            // データ表示部分
+            VStack(alignment: .leading, spacing: 8) {
+                // 現在の使用量
+                DataRow(
+                    iconName: selectedTab == "モバイル" ? "antenna.radiowaves.left.and.right" : "wifi",
+                    label: isPrediction ? "予測使用量" : "使用量",
+                    value: usageValue,
+                    color: chartColor
+                )
+                
+                // 予測の場合は追加情報を表示
+                if isPrediction, let prediction = predictionDetails {
+                    VStack(alignment: .leading, spacing: 6) {
+                        // 信頼度インジケーター
+                        HStack(spacing: 4) {
+                            Text("予測の信頼度")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            ForEach(0..<5) { index in
+                                Circle()
+                                    .fill(index < Int(prediction.confidence * 5) ? chartColor : chartColor.opacity(0.2))
+                                    .frame(width: 6, height: 6)
+                            }
+                        }
+                        
+                        // ピーク時間帯
+                        HStack {
+                            Text("ピーク時間帯")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary)
+                            
+                            Spacer()
+                            
+                            ForEach(prediction.peakHours.prefix(3), id: \.self) { hour in
+                                Text("\(hour)時")
+                                    .font(.system(size: 11))
+                                    .foregroundColor(chartColor)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(chartColor.opacity(0.1))
+                                    )
+                            }
+                        }
+                        
+                        // 予測の特徴
+                        if prediction.isUnusualPattern {
+                            HStack {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 11))
+                                Text("通常より多い使用量")
+                                    .font(.system(size: 11))
+                            }
+                            .foregroundColor(.orange)
+                        }
+                    }
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(chartColor.opacity(0.1))
+                    )
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.systemBackground).opacity(0.95))
+                .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(chartColor.opacity(0.2), lineWidth: 1)
+        )
+    }
+    
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "ja_JP")
+        
+        switch selectedSegment {
+        case .daily:
+            formatter.dateFormat = "M月d日 H時"
+        case .weekly:
+            formatter.dateFormat = "M月d日(E)"
+        case .monthly:
+            formatter.dateFormat = "M月d日"
+        }
+        return formatter.string(from: date)
+    }
+}
+
+struct DataRow: View {
+    let iconName: String
+    let label: String
+    let value: Double
+    let color: Color
+    
+    var body: some View {
+        HStack {
+            // 左側：アイコンとラベル
+            HStack(spacing: 6) {
+                Image(systemName: iconName)
+                    .font(.system(size: 12))
+                    .foregroundColor(color)
+                
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundColor(.secondary)
+            }
+            .frame(width: 90, alignment: .leading)
+            
+            Spacer()
+            
+            // 右側：使用量
+            Text(String(format: "%.2f GB", value))
+                .font(.system(size: 13, weight: .medium))
+                .foregroundColor(.primary)
+        }
     }
 }
