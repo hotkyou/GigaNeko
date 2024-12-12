@@ -462,7 +462,7 @@
 				CODE_SIGN_ENTITLEMENTS = DataUsageMonitorExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DataUsageMonitor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DataUsageMonitor;
@@ -473,7 +473,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko.DataUsage;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan21.GigaNeko.DataUsage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -490,7 +490,7 @@
 				CODE_SIGN_ENTITLEMENTS = DataUsageMonitorExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DataUsageMonitor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DataUsageMonitor;
@@ -501,7 +501,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko.DataUsage;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan21.GigaNeko.DataUsage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -638,7 +638,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -653,7 +653,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan21.GigaNeko;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -670,7 +670,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = 7XT8DJZM65;
+				DEVELOPMENT_TEAM = HB2C2JWPK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -685,7 +685,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = hotkyou.GigaNeko;
+				PRODUCT_BUNDLE_IDENTIFIER = Iccyan21.GigaNeko;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
