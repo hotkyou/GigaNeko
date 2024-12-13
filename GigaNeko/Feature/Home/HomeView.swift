@@ -92,6 +92,7 @@ struct HomeView: View {
         // 保存された猫の名前を取得
         let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
+        //保存されたGB
         let savedDataNumber = UserDefaults.standard.integer(forKey: "dataNumber")
         _dataNumber = State(initialValue: savedDataNumber)
     }
