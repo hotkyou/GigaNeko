@@ -77,6 +77,7 @@ struct HomeView: View {
     @State private var isEditingName = false
     @State private var tempCatName = ""
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    @State private var loginFlag: Bool = true
     
 
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
@@ -91,9 +92,21 @@ struct HomeView: View {
         // 保存された猫の名前を取得
         let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
-        // 保存されたデータ上限値を取得
-        let savedDataNumber = UserDefaults.shared.integer(forKey: "dataNumber")
+        let savedDataNumber = UserDefaults.standard.integer(forKey: "dataNumber")
         _dataNumber = State(initialValue: savedDataNumber)
+    }
+    
+    private func pointsystem(){
+        if let latestUsage = getLatestDataUsage() {
+            if let wwan = latestUsage["wwan"] as? UInt64{
+                let wwanInGB = Double(wwan) / 1_073_741_824
+                let settingData = Int(dataNumber)
+                pointSystem.calculatePointsPerGB(settingDataGB: settingData)
+                pointSystem.calculatePoints(oneMonthData: Double(wwanInGB))
+            }
+        } else {
+            print("No latest data usage found.")
+        }
     }
     
     private func incrementNumber() {
@@ -564,7 +577,7 @@ struct HomeView: View {
                                     Button(action: {
                                         if dataNumber > 0 && dataNumber <= 200 {
                                             UserDefaults.shared.set(catName, forKey: "catName")
-                                            UserDefaults.shared.set(dataNumber, forKey: "dataNumber")
+                                            UserDefaults.standard.set(dataNumber, forKey: "dataNumber")
                                             UserDefaults.shared.set(true, forKey: "hasLaunched")
                                             withAnimation(.easeOut(duration: 0.3)) {
                                                 showSecondLaunchOverlay = false
@@ -594,6 +607,10 @@ struct HomeView: View {
         .onAppear {
             startTimer()
             updateValuesFromBackground()
+            if loginFlag {
+                pointsystem()
+                loginFlag = false
+            }
         }
         .onDisappear {
             saveLastActiveDate()
