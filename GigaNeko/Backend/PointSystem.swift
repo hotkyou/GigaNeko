@@ -12,7 +12,7 @@ class PointSystem: ObservableObject {
     @Published var alertMessage: String? = nil
     
     // 1GBあたりのポイント量
-    @Published var pointsPerGB: Double = 0.0 {
+    @Published var pointsPerGB: Int = 0 {
         didSet {
             saveToUserDefaults(key: userDefaultsKeyPointsPerGB, value: pointsPerGB)
         }
@@ -27,18 +27,28 @@ class PointSystem: ObservableObject {
     init() {
         // UserDefaultsから値をロード
         currentPoints = loadFromUserDefaults(key: userDefaultsKeyPoints, defaultValue: 0)
-        pointsPerGB = loadFromUserDefaults(key: userDefaultsKeyPointsPerGB, defaultValue: 0.0)
+        pointsPerGB = loadFromUserDefaults(key: userDefaultsKeyPointsPerGB, defaultValue: 0)
     }
     
     // 1GBあたりのポイント量を計算
-    func calculatePointsPerGB(settingDataGB: Double) {
-        pointsPerGB = Double(maxPoints) / settingDataGB
+    func calculatePointsPerGB(settingDataGB: Int) {
+        guard settingDataGB > 0 else { return }
+        pointsPerGB = maxPoints / settingDataGB
     }
 
     // データ使用量に基づくポイント追加
     func calculatePoints(oneMonthData: Double) {
-        let points = pointsPerGB * oneMonthData
-        currentPoints = min(Int(points), maxPoints)
+        // ポイントを計算
+        let points = Double(pointsPerGB) * oneMonthData
+            // 無効な値（NaNや∞）をチェック
+            guard points.isFinite else {
+                print("無効なポイント値が計算されました: \(points)")
+                return
+            }
+            // 最大ポイントを制限
+            let calculatedPoints = min(Int(points), maxPoints)
+            // 現在のポイントを加算
+            currentPoints += calculatedPoints
     }
 
     // ポイントを消費
