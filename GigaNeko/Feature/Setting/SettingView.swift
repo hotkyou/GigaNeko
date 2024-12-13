@@ -20,70 +20,72 @@ struct SettingView: View {
     ]
     
     var body: some View {
-        ZStack {
-            //カラーストップのグラデーション
-            LinearGradient(
-                gradient: Gradient(colors: [
-                    Color(red: 225/255, green: 255/255, blue: 203/255), // #E1FFCB
-                    Color(red: 255/255, green: 242/255, blue: 209/255)  // #FFF2D1
-                ]),
-                startPoint: .top,
-                endPoint: .bottom
-            ).edgesIgnoringSafeArea(.all)
-            ScrollView {
-                VStack(spacing: 24) {
-                    // Header
-                    Text("設定")
-                        .font(.system(size: 34, weight: .bold))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal)
-                    
-                    // Menu Items
-                    VStack(spacing: 2) {
-                        ForEach(menuItems.indices, id: \.self) { index in
-                            let item = menuItems[index]
-                            MenuItemView(icon: item.icon,
-                                         title: item.title,
-                                         type: item.type)
-                            
-                            if index != menuItems.count - 1 {
-                                Divider()
-                                    .padding(.horizontal)
+        NavigationView{
+            ZStack {
+                //カラーストップのグラデーション
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 225/255, green: 255/255, blue: 203/255), // #E1FFCB
+                        Color(red: 255/255, green: 242/255, blue: 209/255)  // #FFF2D1
+                    ]),
+                    startPoint: .top,
+                    endPoint: .bottom
+                ).edgesIgnoringSafeArea(.all)
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header
+                        Text("設定")
+                            .font(.system(size: 34, weight: .bold))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal)
+                        
+                        // Menu Items
+                        VStack(spacing: 2) {
+                            ForEach(menuItems.indices, id: \.self) { index in
+                                let item = menuItems[index]
+                                MenuItemView(icon: item.icon,
+                                             title: item.title,
+                                             type: item.type)
+                                
+                                if index != menuItems.count - 1 {
+                                    Divider()
+                                        .padding(.horizontal)
+                                }
                             }
                         }
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color.black.opacity(0.05),
+                                        radius: 10, x: 0, y: 5)
+                        )
+                        .padding(.horizontal)
+                        
+                        // Notification Toggle
+                        HStack {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(.primary)
+                            
+                            Text("通知")
+                                .font(.system(size: 17))
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $toggleState1)
+                                .toggleStyle(SwitchToggleStyle(tint: Color.orange))
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color.black.opacity(0.05),
+                                        radius: 10, x: 0, y: 5)
+                        )
+                        .padding(.horizontal)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.05),
-                                    radius: 10, x: 0, y: 5)
-                    )
-                    .padding(.horizontal)
-                    
-                    // Notification Toggle
-                    HStack {
-                        Image(systemName: "bell.fill")
-                            .font(.system(size: 22))
-                            .foregroundColor(.primary)
-                        
-                        Text("通知")
-                            .font(.system(size: 17))
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $toggleState1)
-                            .toggleStyle(SwitchToggleStyle(tint: Color.orange))
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.05),
-                                    radius: 10, x: 0, y: 5)
-                    )
-                    .padding(.horizontal)
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
             }
         }
     }
