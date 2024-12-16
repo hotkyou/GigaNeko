@@ -74,6 +74,13 @@ func saveDataUsage() {
     print("Data Usage Array with Differences: \(dataUsageArray)")
 }
 
+func getLatestDataUsage() -> [String: Any]? {
+    if let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] {
+        return dataUsageArray.last // 最新のデータを返す
+    }
+    return nil
+}
+
 // 日ごとに時間単位でデータを取得
 func loadHourlyDataUsage(for date: Date) -> [HourlyDataUsage] {
     guard let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] else {
