@@ -168,9 +168,15 @@ struct HomeView: View {
                                             .cornerRadius(2.5)
                                         
                                         // 使用量のバー
+                                        let progress: CGFloat = if dataNumber > 0 {
+                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0))
+                                        } else {
+                                            0
+                                        }
+
                                         Rectangle()
                                             .fill(Color.orange)
-                                            .frame(width: 60 * CGFloat(min(wwan / Double(dataNumber), 1.0)), height: 5)
+                                            .frame(width: 60 * progress, height: 5)
                                             .cornerRadius(2.5)
                                     }
                                     
@@ -192,7 +198,8 @@ struct HomeView: View {
                                 ZStack {
                                     Rectangle()
                                         .fill(Color.white)
-                                        .frame(width: 230, height: 34)
+                                        .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
+                                        .frame(height: 34)
                                         .opacity(0.7)
                                         .cornerRadius(20)
                                     
@@ -202,11 +209,13 @@ struct HomeView: View {
                                         HStack(spacing: 8) {
                                             Image("Stamina")
                                                 .resizable()
+                                                .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text("\(Int(truncatedStamina))%")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 12, weight: .medium))
+                                                    .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
                                                 ProgressView(value: stamina / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.green)
@@ -223,11 +232,13 @@ struct HomeView: View {
                                         HStack(spacing: 8) {
                                             Image("Stress")
                                                 .resizable()
+                                                .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
                                                 Text("\(Int(stress))%")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 12, weight: .medium))
+                                                    .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
                                                 ProgressView(value: stress / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.orange)
@@ -239,7 +250,7 @@ struct HomeView: View {
                                 }
                                 
                                 // ボタンとポイント表示
-                                HStack {
+                                HStack(spacing: 8) { // スペーシングを調整
                                     // 飯ボタン
                                     Button(action: recoverStamina) {
                                         HStack(spacing: 4) {
@@ -249,7 +260,7 @@ struct HomeView: View {
                                                 .font(.system(size: 14, weight: .medium))
                                         }
                                         .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
+                                        .padding(.horizontal, 10) // パディングを調整
                                         .padding(.vertical, 8)
                                         .background(Color.green)
                                         .cornerRadius(15)
@@ -269,7 +280,7 @@ struct HomeView: View {
                                                 .font(.system(size: 14, weight: .medium))
                                         }
                                         .foregroundColor(.white)
-                                        .padding(.horizontal, 12)
+                                        .padding(.horizontal, 10) // パディングを調整
                                         .padding(.vertical, 8)
                                         .background(Color.blue)
                                         .cornerRadius(15)
@@ -279,27 +290,30 @@ struct HomeView: View {
                                     ZStack {
                                         Rectangle()
                                             .fill(Color.white)
-                                            .frame(width: 85, height: 28)
+                                            .frame(maxWidth: 85) // 最大幅を設定
+                                            .frame(height: 28)
                                             .opacity(0.7)
                                             .cornerRadius(15)
                                         
                                         HStack(spacing: 4) {
                                             Image("Point")
                                                 .resizable()
+                                                .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 16, height: 16)
                                             Text("\(pointSystem.currentPoints)")
                                                 .foregroundColor(.gray)
                                                 .font(.system(size: 14, weight: .medium))
+                                                .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
                                             Text("pt")
                                                 .foregroundColor(.gray)
                                                 .font(.system(size: 10))
                                         }
                                     }
                                 }
-                                .frame(width: 230)
+                                .frame(maxWidth: UIScreen.main.bounds.width * 0.7) // 画面幅に応じて最大幅を設定
                             }
                         }
-                        .padding(.trailing, leftPadding)
+                        .padding(.trailing, min(leftPadding, UIScreen.main.bounds.width * 0.1)) // 右パディングを画面サイズに応じて制限
                         .padding(.top, 65)
                     }
                     
@@ -378,47 +392,51 @@ struct HomeView: View {
                     }
                     
                     // 下部のレベル表示
-                    VStack {
+                    HStack{
                         Spacer()
-                            .frame(height: UIScreen.main.bounds.height * 0.75)
-                        
-                        // レベルと名前表示のZStack
-                        ZStack {
-                            Rectangle()
-                                .fill(Color.white)
-                                .opacity(0.7)
-                                .cornerRadius(20)
-                                .frame(height: 30)
+                        VStack {
+                            Spacer()
+                                .frame(height: UIScreen.main.bounds.height * 0.75)
                             
-                            Button(action: {
-                                // 名前変更用のオーバーレイを表示
-                                tempCatName = catName  // 現在の名前を一時保存
-                                showFirstLaunchOverlay = true
-                                isEditingName = true
-                            }) {
-                                HStack(spacing: 12) {
-                                    Text("Lv100")
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 14))
-                                    
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 1, height: 15)
-
-                                    HStack(spacing: 4) {
-                                        Text(catName)
+                            // レベルと名前表示のZStack
+                            ZStack {
+                                Rectangle()
+                                    .fill(Color.white)
+                                    .opacity(0.7)
+                                    .cornerRadius(20)
+                                    .frame(height: 30)
+                                
+                                Button(action: {
+                                    // 名前変更用のオーバーレイを表示
+                                    tempCatName = catName  // 現在の名前を一時保存
+                                    showFirstLaunchOverlay = true
+                                    isEditingName = true
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Text("Lv100")
                                             .foregroundColor(.gray)
                                             .font(.system(size: 14))
-                                        Image(systemName: "pencil.circle.fill")
-                                            .foregroundColor(.orange.opacity(0.8))
-                                            .font(.system(size: 14))
+                                        
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 1, height: 15)
+                                        
+                                        HStack(spacing: 4) {
+                                            Text(catName)
+                                                .foregroundColor(.gray)
+                                                .font(.system(size: 14))
+                                            Image(systemName: "pencil.circle.fill")
+                                                .foregroundColor(.orange.opacity(0.8))
+                                                .font(.system(size: 14))
+                                        }
                                     }
+                                    .frame(width: 160)
                                 }
-                                .frame(width: 160)
                             }
+                            .frame(width: 180)
+                            
+                            Spacer()
                         }
-                        .frame(width: 180)
-                        
                         Spacer()
                     }
                 }

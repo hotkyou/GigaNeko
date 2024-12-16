@@ -125,69 +125,126 @@ struct StatisticsView: View {
     // MARK: - Body
     var body: some View {
         ZStack {
-            Image("StaticBackGround")
+            // 背景画像
+            Image("nikukyu")
+                .resizable()
+                .renderingMode(.template)
+                .foregroundStyle(currentColor.opacity(0.1))
+                .aspectRatio(contentMode: .fill)
                 .edgesIgnoringSafeArea(.all)
             
-            VStack {
-                // タブ切り替え
-                NetworkTypeTabBar(selectedTab: $selectedTab)
-                    .padding(.top, 92)
-                    .padding(.bottom, 20)
-                
-                VStack(spacing: 8) {
-                    // ヘッダー
-                    NetworkUsageHeader(selectedTab: selectedTab)
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    // タブバー
+                    HStack(spacing: 16) {
+                        Spacer(minLength: 0)
+                        TabButton(
+                            title: "モバイル",
+                            isSelected: selectedTab == "モバイル",
+                            color: .orange
+                        ) {
+                            withAnimation {
+                                selectedTab = "モバイル"
+                            }
+                        }
+                        
+                        TabButton(
+                            title: "WiFi",
+                            isSelected: selectedTab == "WiFi",
+                            color: .green
+                        ) {
+                            withAnimation {
+                                selectedTab = "WiFi"
+                            }
+                        }
+                        Spacer(minLength: 0)
+                    }
                     
-                    // セグメントコントロール
-                    TimeSegmentControl(
-                        selectedSegment: $selectedSegment,
-                        selectedTab: selectedTab
-                    )
-                    
-                    // 日付ナビゲーション
-                    DateNavigationBar(
-                        currentDate: currentDate,
-                        selectedSegment: selectedSegment,
-                        selectedTab: selectedTab,
-                        onDateChange: moveDate
-                    )
-                    
-                    // グラフ
-                    NetworkUsageChart(
-                        displayData: displayData,
-                        predictionData: predictionData,
-                        showLowConfidenceWarning: showLowConfidenceWarning,
-                        selectedTab: selectedTab,
-                        selectedSegment: selectedSegment,
-                        currentDate: currentDate,
-                        selectedDataPoint: $selectedDataPoint,
-                        isDragging: $isDragging,
-                        selectedLocation: $selectedLocation
-                    )
-                    .frame(height: 200)
-                    .padding(6)
-                    .background(Color(.systemGray6))
-                    .cornerRadius(15)
-                    
-                    // 使用量サマリー
-                    if selectedTab == "モバイル" {
-                        MobileDataSummary(
-                            monthTitle: monthTitle,
-                            statistics: monthlyStatistics,
-                            dataLimit: dataLimit
+                    VStack(spacing: 20) {
+                        // 期間選択
+                        TimeSegmentControl(
+                            selectedSegment: $selectedSegment,
+                            selectedTab: selectedTab
                         )
-                    } else {
-                        WiFiDataSummary(
-                            monthTitle: monthTitle,
-                            statistics: monthlyStatistics
+                        
+                        // 日付ナビゲーション
+                        DateNavigationBar(
+                            currentDate: currentDate,
+                            selectedSegment: selectedSegment,
+                            selectedTab: selectedTab,
+                            onDateChange: moveDate
                         )
+                        
+                        // チャート
+                        NetworkUsageChartCard(
+                            chart: NetworkUsageChart(
+                                displayData: displayData,
+                                predictionData: predictionData,
+                                showLowConfidenceWarning: showLowConfidenceWarning,
+                                selectedTab: selectedTab,
+                                selectedSegment: selectedSegment,
+                                currentDate: currentDate,
+                                selectedDataPoint: $selectedDataPoint,
+                                isDragging: $isDragging,
+                                selectedLocation: $selectedLocation
+                            ),
+                            color: currentColor
+                        )
+                        
+                        // サマリーセクション
+                        VStack(spacing: 16) {
+                            Text(monthTitle)
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(currentColor)
+                                .frame(maxWidth: .infinity, alignment: .center)
+                            
+                            VStack(spacing: 12) {
+                                if selectedTab == "モバイル" {
+                                    SummaryCard(
+                                        title: "使った通信量",
+                                        value: String(format: "%.1f GB", monthlyStatistics.totalWwan),
+                                        color: .orange
+                                    )
+                                    
+                                    SummaryCard(
+                                        title: "残っている通信量",
+                                        value: String(format: "%.1f GB", max(0, Double(dataLimit) - monthlyStatistics.totalWwan)),
+                                        color: .orange
+                                    )
+                                    
+                                    SummaryCard(
+                                        title: "月間制限",
+                                        value: "\(dataLimit) GB",
+                                        color: .orange
+                                    )
+                                } else {
+                                    SummaryCard(
+                                        title: "今月の使用量",
+                                        value: String(format: "%.1f GB", monthlyStatistics.totalWifi),
+                                        color: .green
+                                    )
+                                    
+                                    SummaryCard(
+                                        title: "1日平均",
+                                        value: String(format: "%.1f GB", monthlyStatistics.totalWifi / 30),
+                                        color: .green
+                                    )
+                                    
+                                    SummaryCard(
+                                        title: "最大使用日",
+                                        value: String(format: "%.1f GB", monthlyStatistics.maxTotal),
+                                        color: .green
+                                    )
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
                     }
                 }
-                
-                Spacer()
+                .frame(maxWidth: 500)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 16)
             }
-            .padding(.leading, 64)
-            .padding(.trailing, 74)
         }
         .toolbar(.hidden, for: .tabBar)
         .onAppear {
@@ -196,6 +253,10 @@ struct StatisticsView: View {
         .onChange(of: selectedSegment) { _ in
             updatePredictions()
         }
+    }
+
+    private var currentColor: Color {
+        selectedTab == "モバイル" ? .orange : .green
     }
     
     // MARK: - Helper Methods
@@ -218,30 +279,6 @@ extension Calendar {
 }
 
 // MARK: - Tab Bar Component
-struct NetworkTypeTabBar: View {
-    @Binding var selectedTab: String
-    
-    var body: some View {
-        HStack(spacing: 20) {
-            TabButton(
-                title: "モバイル",
-                isSelected: selectedTab == "モバイル",
-                color: .orange
-            ) {
-                selectedTab = "モバイル"
-            }
-            
-            TabButton(
-                title: "WiFi",
-                isSelected: selectedTab == "WiFi",
-                color: .green
-            ) {
-                selectedTab = "WiFi"
-            }
-        }
-    }
-}
-
 struct TabButton: View {
     let title: String
     let isSelected: Bool
@@ -252,37 +289,21 @@ struct TabButton: View {
         Button(action: action) {
             Text(title)
                 .font(.system(size: 16, weight: isSelected ? .bold : .regular))
-                .foregroundColor(isSelected ? color : .gray)
-                .padding(.horizontal, 14)
-                .cornerRadius(8)
+                .foregroundColor(isSelected ? .white : .gray)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 25)
+                        .fill(isSelected ? color : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 25)
+                        .stroke(isSelected ? Color.clear : Color.gray.opacity(0.3), lineWidth: 1)
+                )
+                .shadow(color: isSelected ? color.opacity(0.3) : .clear, radius: 8, x: 0, y: 4)
+                .scaleEffect(isSelected ? 1.05 : 1.0)
         }
-    }
-}
-
-// MARK: - Header Components
-struct NetworkUsageHeader: View {
-    let selectedTab: String
-    
-    private var headerColor: Color {
-        selectedTab == "モバイル" ? .orange : .green
-    }
-    
-    var body: some View {
-        HStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(headerColor.opacity(0.3))
-                .frame(width: 5, height: 18)
-            
-            Text("\(selectedTab)使用量")
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 30)
-                .padding(.vertical, 5)
-                .background(headerColor.opacity(0.3))
-                .cornerRadius(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, 30)
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
 }
 
@@ -296,40 +317,41 @@ struct TimeSegmentControl: View {
     }
     
     var body: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 6) {
             ForEach(TimeSegment.allCases, id: \.self) { segment in
-                SegmentButton(
-                    title: segment.rawValue,
-                    isSelected: selectedSegment == segment,
-                    color: segmentColor
-                ) {
-                    selectedSegment = segment
+                Button(action: {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        selectedSegment = segment
+                    }
+                }) {
+                    Text(segment.rawValue)
+                        .font(.system(size: 14, weight: selectedSegment == segment ? .bold : .regular))
+                        .foregroundColor(selectedSegment == segment ? segmentColor : .gray)
+                        .frame(minWidth: 50)
+                        .padding(.vertical, 8)
+                        .background(
+                            ZStack {
+                                if selectedSegment == segment {
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(segmentColor.opacity(0.15))
+                                    
+                                    // 下部のアクセントライン
+                                    Rectangle()
+                                        .fill(segmentColor)
+                                        .frame(height: 2)
+                                        .offset(y: 12)
+                                }
+                            }
+                        )
                 }
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .background(Color(.systemGray6))
-        .cornerRadius(20)
-    }
-}
-
-struct SegmentButton: View {
-    let title: String
-    let isSelected: Bool
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(isSelected ? .white : .gray)
-                .padding(.vertical, 10)
-                .padding(.horizontal, 15)
-                .background(isSelected ? color : Color.clear)
-                .cornerRadius(15)
-        }
+        .padding(8)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(Color(.systemBackground))
+                .shadow(color: Color.black.opacity(0.05), radius: 8, x: 0, y: 4)
+        )
     }
 }
 
@@ -346,32 +368,46 @@ struct DateNavigationBar: View {
     
     var body: some View {
         HStack {
-            NavigationButton(
-                systemName: "chevron.left",
-                color: navigationColor
-            ) {
-                onDateChange(-1)
+            Button(action: { onDateChange(-1) }) {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        Circle()
+                            .fill(navigationColor)
+                            .shadow(color: navigationColor.opacity(0.3), radius: 4, x: 0, y: 2)
+                    )
             }
             
             Spacer()
             
             Text(formattedDate)
-                .font(.headline)
-                .foregroundColor(.white)
+                .font(.system(size: 16, weight: .bold))
+                .foregroundColor(.primary)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.systemBackground))
+                        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                )
             
             Spacer()
             
-            NavigationButton(
-                systemName: "chevron.right",
-                color: navigationColor
-            ) {
-                onDateChange(1)
+            Button(action: { onDateChange(1) }) {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(width: 36, height: 36)
+                    .background(
+                        Circle()
+                            .fill(navigationColor)
+                            .shadow(color: navigationColor.opacity(0.3), radius: 4, x: 0, y: 2)
+                    )
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(navigationColor.opacity(0.2))
-        .cornerRadius(15)
+        .padding(.horizontal, 16)
     }
     
     private var formattedDate: String {
@@ -394,25 +430,6 @@ struct DateNavigationBar: View {
         case .monthly:
             formatter.dateFormat = "yyyy年M月"
             return formatter.string(from: currentDate)
-        }
-    }
-}
-
-struct NavigationButton: View {
-    let systemName: String
-    let color: Color
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(color)
-                .frame(width: 32, height: 32)
-                .background(
-                    Circle()
-                        .fill(color.opacity(0.2))
-                )
         }
     }
 }
@@ -667,182 +684,49 @@ struct NetworkUsageChart: View {
     }
 }
 
-// MARK: - Selected Data Display
-struct DataPointDisplay: View {
-    let dataPoint: DataPoint
-    let selectedTab: String
+struct NetworkUsageChartCard: View {
+    let chart: NetworkUsageChart
+    let color: Color
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(formatDate(dataPoint.date))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.primary)
-            
-            HStack(spacing: 8) {
-                DataValueLabel(
-                    iconName: selectedTab == "モバイル" ? "antenna.radiowaves.left.and.right" : "wifi",
-                    value: selectedTab == "モバイル" ? dataPoint.wwan : dataPoint.wifi,
-                    color: selectedTab == "モバイル" ? .orange : .green
-                )
-            }
+        VStack(spacing: 12) {
+            chart
+                .frame(height: 150)
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 10)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.systemGray6).opacity(0.95))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                )
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.systemBackground))
+                .shadow(color: color.opacity(0.1), radius: 10, x: 0, y: 5)
         )
     }
-    
-    private func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "M/d HH:mm"
-        return formatter.string(from: date)
-    }
 }
 
-struct DataValueLabel: View {
-    let iconName: String
-    let value: Double
-    let color: Color
-    
-    var body: some View {
-        HStack(spacing: 2) {
-            Image(systemName: iconName)
-                .font(.system(size: 12))
-                .foregroundColor(color)
-            
-            Text(String(format: "%.2f GB", value))
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(color)
-        }
-        .frame(minWidth: 50, alignment: .leading)
-    }
-}
-
-// MARK: - Summary Components
-struct MobileDataSummary: View {
-    let monthTitle: String
-    let statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double)
-    let dataLimit: Int
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            SummaryHeader(title: monthTitle, color: .orange)
-            
-            VStack(spacing: 4) {
-                VerticalSummaryCard(
-                    title: "使った通信量",
-                    value: String(format: "%.1f GB", statistics.totalWwan),
-                    color: .orange
-                )
-                
-                VerticalSummaryCard(
-                    title: "残っている通信量",
-                    value: String(format: "%.1f GB", max(0, Double(dataLimit) - statistics.totalWwan)),
-                    color: .orange
-                )
-                
-                VerticalSummaryCard(
-                    title: "月間制限",
-                    value: "\(dataLimit) GB",
-                    color: .orange
-                )
-            }
-            .padding(.horizontal, 12)
-        }
-        .padding(6)
-        .background(Color(.systemGray6))
-        .cornerRadius(20)
-    }
-}
-
-struct WiFiDataSummary: View {
-    let monthTitle: String
-    let statistics: (totalWifi: Double, totalWwan: Double, maxTotal: Double)
-    
-    var body: some View {
-        VStack(spacing: 4) {
-            SummaryHeader(title: monthTitle, color: .green)
-            
-            VStack(spacing: 4) {
-                VerticalSummaryCard(
-                    title: "今月の使用量",
-                    value: String(format: "%.1f GB", statistics.totalWifi),
-                    color: .green
-                )
-                
-                VerticalSummaryCard(
-                    title: "1日平均",
-                    value: String(format: "%.1f GB", statistics.totalWifi / 30),
-                    color: .green
-                )
-                
-                VerticalSummaryCard(
-                    title: "最大使用日",
-                    value: String(format: "%.1f GB", statistics.maxTotal),
-                    color: .green
-                )
-            }
-            .padding(.horizontal, 12)
-        }
-        .padding(6)
-        .background(Color(.systemGray6))
-        .cornerRadius(20)
-    }
-}
-
-struct SummaryHeader: View {
-    let title: String
-    let color: Color
-    
-    var body: some View {
-        HStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(color.opacity(0.3))
-                .frame(width: 5, height: 18)
-            
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.white)
-                .padding(.horizontal, 40)
-                .padding(.vertical, 3)
-                .background(color.opacity(0.3))
-                .cornerRadius(10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, 12)
-    }
-}
-
-struct VerticalSummaryCard: View {
+struct SummaryCard: View {
     let title: String
     let value: String
     let color: Color
     
     var body: some View {
-        HStack {
+        VStack(alignment: .center, spacing: 8) {
             Text(title)
-                .font(.footnote)
+                .font(.system(size: 14, weight: .medium))
                 .foregroundColor(.gray)
             
-            Spacer()
-            
             Text(value)
-                .font(.callout)
-                .fontWeight(.bold)
+                .font(.system(size: 24, weight: .bold))
                 .foregroundColor(color)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color(.systemBackground))
-                .shadow(radius: 1)
+                .shadow(color: color.opacity(0.1), radius: 8, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(color.opacity(0.1), lineWidth: 1)
         )
     }
 }
