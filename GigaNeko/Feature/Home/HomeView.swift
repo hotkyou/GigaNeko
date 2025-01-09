@@ -65,6 +65,7 @@ class ParticleSystem: ObservableObject {
 struct HomeView: View {
     @State private var offsetY: CGFloat = 0
     @State private var movingDown = true
+    @State private var showWelcomeScreen = false
     @State private var showFirstLaunchOverlay = false
     @State private var showSecondLaunchOverlay = false
     @State private var catName = ""
@@ -88,11 +89,19 @@ struct HomeView: View {
     // 初回起動時の処理を行うための初期化
     init() {
         let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
-        _showFirstLaunchOverlay = State(initialValue: !hasLaunched)
+        let hasCatName = UserDefaults.shared.string(forKey: "catName") != nil
+        
+        // 初回起動時はウェルカム画面を表示、それ以外は非表示
+        _showWelcomeScreen = State(initialValue: !hasLaunched)
+        
+        // 名前が設定されていない場合のみ名前入力画面を表示
+        _showFirstLaunchOverlay = State(initialValue: hasLaunched && !hasCatName)
+        
         // 保存された猫の名前を取得
         let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
-        //保存されたGB
+        
+        // 保存されたGB
         let savedDataNumber = UserDefaults.standard.integer(forKey: "dataNumber")
         _dataNumber = State(initialValue: savedDataNumber)
     }
@@ -322,7 +331,9 @@ struct HomeView: View {
                         Spacer()
                         VStack {
                             Spacer()
+                            // パーティクル表示用のレイヤー
                             GeometryReader { geometry in
+                                let frame = geometry.frame(in: .global)
                                 Image(isDragging ? "NadeNeko" : "Neko")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
@@ -346,9 +357,7 @@ struct HomeView: View {
                                                             
                                                             // 撫で始めたらタイマーを開始
                                                             pettingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                                                                particleSystem.createRisingHearts(
-                                                                    in: geometry.frame(in: .global)
-                                                                )
+                                                                particleSystem.createRisingHearts(in: frame)
                                                             }
                                                         }
                                                         lastDragLocation = currentLocation
@@ -442,183 +451,85 @@ struct HomeView: View {
                 }
                 .edgesIgnoringSafeArea(.all)
                 
+                if showWelcomeScreen {
+                    // Tutorial画面
+                    ZStack {
+                        // 背景にグラデーションを追加
+                        LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.6), Color.purple.opacity(0.6)]), startPoint: .topLeading, endPoint: .bottomTrailing)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 20) {
+                            Text("ようこそ！")
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
+                            
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 20)
+                                    .fill(Color(red: 255/255, green: 242/255, blue: 209/255))
+                                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                                
+                                VStack(spacing: 15) {
+                                    Image("Neko")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 180)
+                                        .shadow(color: .gray.opacity(0.5), radius: 5, x: 0, y: 3)
+                                    
+                                    Text("インストールありがとうございます！")
+                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                                        .foregroundColor(.gray)
+                                    
+                                    Text("このアプリの説明を始めていくよ")
+                                        .font(.system(size: 16, weight: .regular, design: .rounded))
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 10)
+                                }
+                            }
+                            .frame(width: 300, height: 280)
+                            
+                            TutorialButton(
+                                title: "チュートリアル開始",
+                                width: 220,
+                                action: {
+                                    withAnimation {
+                                        showWelcomeScreen = false
+                                        showFirstLaunchOverlay = true
+                                    }
+                                }
+                            )
+                            .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 3)
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 25)
+                                .fill(Color(red: 232/255, green: 201/255, blue: 160/255))
+                                .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 10)
+                        )
+                        .padding(.horizontal, 20)
+                    }
+                }
+                
                 // 名前入力オーバーレイ
                 if showFirstLaunchOverlay {
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack {
-                        Spacer()
-                            .frame(height: 100)
-                            
-                        ZStack {
-                            // チュートリアル画像
-                            Image("Tutorial1")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 300)
-                            
-                            // テキストと入力フィールド、ボタンを含むVStack
-                            VStack(spacing: 20) {
-                                // 上部の説明テキスト
-                                VStack(spacing: 10) {
-                                    Text(isEditingName ? "名前を変更" : "名前を決めよう")
-                                        .font(.title)
-                                        .bold()
-                                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
-                                        .padding(.top, -30)
-                                }
-                                .padding()
-                                
-                                Spacer()
-                                    .frame(height: 70)
-                                
-                                // 入力フィールドとボタンを縦に並べるVStack
-                                VStack(spacing: 15) {
-                                    TextField("猫の名前を入力", text: $catName)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                        .foregroundColor(.black)
-                                        .frame(width: 200)
-                                        .background(Color.white)
-                                        .padding(.horizontal)
-                                    
-                                    HStack(spacing: 10) {
-                                        if isEditingName {
-                                            // キャンセルボタン
-                                            Button(action: {
-                                                catName = tempCatName  // 元の名前に戻す
-                                                showFirstLaunchOverlay = false
-                                                isEditingName = false
-                                            }) {
-                                                Text("キャンセル")
-                                                    .foregroundColor(.black)
-                                                    .frame(width: 95, height: 45)
-                                                    .background(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                                    .cornerRadius(20)
-                                            }
-                                        }
-                                        
-                                        // 次へ/決定ボタン
-                                        Button(action: {
-                                            if !catName.isEmpty {
-                                                UserDefaults.shared.set(catName, forKey: "catName")
-                                                if isEditingName {
-                                                    showFirstLaunchOverlay = false
-                                                    isEditingName = false
-                                                } else {
-                                                    showSecondLaunchOverlay = true
-                                                    showFirstLaunchOverlay = false
-                                                }
-                                            }
-                                        }) {
-                                            Text(isEditingName ? "決定" : "次へ")
-                                                .foregroundColor(.black)
-                                                .frame(width: isEditingName ? 95 : 200, height: 45)
-                                                .background(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                                .cornerRadius(20)
-                                        }
-                                        .disabled(catName.isEmpty)
-                                    }
-                                }
-                                .padding(.bottom, 30)
-                            }
-                            .frame(width: 300)
-                        }
-                        
-                        Spacer()
+                    TutorialOverlay {
+                        NameInputView(
+                            catName: $catName,
+                            showFirstLaunchOverlay: $showFirstLaunchOverlay,
+                            showSecondLaunchOverlay: $showSecondLaunchOverlay,
+                            isEditingName: $isEditingName
+                        )
                     }
                     .ignoresSafeArea(.keyboard)
-                    .transition(.scale.combined(with: .opacity))
                 } else if showSecondLaunchOverlay {
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack {
-                        Spacer()
-                            .frame(height: 100) // 上部の固定スペース
-                            
-                        ZStack {
-                            // チュートリアル画像
-                            Image("Tutorial2")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 300)
-                            
-                            // テキストと入力フィールド、ボタンを含むVStack
-                            VStack(spacing: 20) {
-                                // 上部の説明テキスト
-                                VStack(spacing: 10) {
-                                    Text("通信量を決めよう")
-                                        .font(.title)
-                                        .bold()
-                                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
-                                }
-                                .padding()
-                                
-                                // 入力フィールドとボタンを縦に並べるVStack
-                                VStack(spacing: 0) {
-                                    // 選択された数値の大きな表示
-                                    HStack(spacing: 0) {
-                                        // マイナスボタン
-                                        Button(action: decrementNumber) {
-                                            Image(systemName: "minus.circle.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                        }
-                                        .padding(.leading, 20)
-                                        
-                                        Spacer()
-                                            .frame(minWidth: 10)
-                                        
-                                        // 現在の値の表示
-                                        Text("\(dataNumber)")
-                                            .font(.system(size: 70, weight: .bold))
-                                            .frame(minWidth: 150)
-                                            .multilineTextAlignment(.center)
-                                        
-                                        Spacer()
-                                            .frame(minWidth: 10)
-                                        
-                                        // プラスボタン
-                                        Button(action: incrementNumber) {
-                                            Image(systemName: "plus.circle.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                        }
-                                        .padding(.trailing, 20)
-                                    }
-                                    .frame(width: 200, height: 80)
-                                    
-                                    Spacer()
-                                        .frame(height: 60)
-                                    
-                                    // 設定ボタン
-                                    Button(action: {
-                                        if dataNumber > 0 && dataNumber <= 200 {
-                                            UserDefaults.shared.set(catName, forKey: "catName")
-                                            UserDefaults.standard.set(dataNumber, forKey: "dataNumber")
-                                            UserDefaults.shared.set(true, forKey: "hasLaunched")
-                                            withAnimation(.easeOut(duration: 0.3)) {
-                                                showSecondLaunchOverlay = false
-                                            }
-                                        }
-                                    }) {
-                                        Text("設定")
-                                            .foregroundColor(.black)
-                                            .frame(width: 200, height: 45)
-                                            .background(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                            .cornerRadius(20)
-                                    }
-                                    .disabled(dataNumber <= 0 || dataNumber > 200)
-                                }
-                                .padding(.bottom, 30)
-                            }
-                            .frame(width: 300)
-                        }
-                        
-                        Spacer()
+                    TutorialOverlay {
+                        DataInputView(
+                            dataNumber: $dataNumber,
+                            showSecondLaunchOverlay: $showSecondLaunchOverlay,
+                            catName: $catName
+                        )
                     }
-                    .transition(.scale.combined(with: .opacity))
                 }
             }
             .edgesIgnoringSafeArea(.all)
@@ -682,5 +593,231 @@ struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
             .environmentObject(PointSystem())
+    }
+}
+
+// チュートリアルの各ステップを定義
+enum TutorialStep {
+    case nameInput
+    case dataInput
+}
+
+// 共通のオーバーレイコンポーネント
+struct TutorialOverlay<Content: View>: View {
+    let content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        Color.black.opacity(0.4)
+            .edgesIgnoringSafeArea(.all)
+        
+        VStack {
+            Spacer()
+            
+            ZStack {
+                content
+            }
+            
+            Spacer()
+        }
+        .transition(.scale.combined(with: .opacity))
+    }
+}
+
+// 名前入力画面コンポーネント
+struct NameInputView: View {
+    @Binding var catName: String
+    @Binding var showFirstLaunchOverlay: Bool
+    @Binding var showSecondLaunchOverlay: Bool
+    @Binding var isEditingName: Bool
+    @State private var tempCatName: String = ""
+    
+    var body: some View {
+        ZStack {
+            Image("Tutorial1")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 300)
+            
+            VStack(spacing: 20) {
+                TutorialHeader(title: isEditingName ? "名前を変更" : "名前を決めよう")
+                
+                Spacer()
+                    .frame(height: 70)
+                
+                VStack(spacing: 15) {
+                    TextField("猫の名前を入力", text: $catName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .foregroundColor(.black)
+                        .frame(width: 200)
+                        .background(Color.white)
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 10) {
+                        if isEditingName {
+                            TutorialButton(
+                                title: "キャンセル",
+                                width: 95,
+                                action: {
+                                    catName = tempCatName
+                                    showFirstLaunchOverlay = false
+                                    isEditingName = false
+                                }
+                            )
+                        }
+                        
+                        TutorialButton(
+                            title: isEditingName ? "決定" : "次へ",
+                            width: isEditingName ? 95 : 200,
+                            action: {
+                                if !catName.isEmpty {
+                                    UserDefaults.shared.set(catName, forKey: "catName")
+                                    if isEditingName {
+                                        showFirstLaunchOverlay = false
+                                        isEditingName = false
+                                    } else {
+                                        showSecondLaunchOverlay = true
+                                        showFirstLaunchOverlay = false
+                                    }
+                                }
+                            },
+                            isDisabled: catName.isEmpty
+                        )
+                    }
+                }
+                .padding(.bottom, 30)
+            }
+            .frame(width: 300)
+        }
+    }
+}
+
+// データ入力画面コンポーネント
+struct DataInputView: View {
+    @Binding var dataNumber: Int
+    @Binding var showSecondLaunchOverlay: Bool
+    @Binding var catName: String
+    
+    var body: some View {
+        ZStack {
+            Image("Tutorial2")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 300)
+            
+            VStack(spacing: 20) {
+                TutorialHeader(title: "通信量を決めよう")
+                
+                VStack(spacing: 0) {
+                    DataNumberSelector(dataNumber: $dataNumber)
+                    
+                    Spacer()
+                        .frame(height: 60)
+                    
+                    TutorialButton(
+                        title: "設定",
+                        width: 200,
+                        action: {
+                            if dataNumber > 0 && dataNumber <= 200 {
+                                UserDefaults.shared.set(catName, forKey: "catName")
+                                UserDefaults.standard.set(dataNumber, forKey: "dataNumber")
+                                UserDefaults.shared.set(true, forKey: "hasLaunched")
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    showSecondLaunchOverlay = false
+                                }
+                            }
+                        },
+                        isDisabled: dataNumber <= 0 || dataNumber > 200
+                    )
+                }
+                .padding(.bottom, 30)
+            }
+            .frame(width: 300)
+        }
+    }
+}
+
+// 共通のヘッダーコンポーネント
+struct TutorialHeader: View {
+    let title: String
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Text(title)
+                .font(.title)
+                .bold()
+                .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                .padding(.top, -30)
+        }
+        .padding()
+    }
+}
+
+// 共通のボタンコンポーネント
+struct TutorialButton: View {
+    let title: String
+    let width: CGFloat
+    let action: () -> Void
+    var isDisabled: Bool = false
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .foregroundColor(.black)
+                .frame(width: width, height: 45)
+                .background(Color(red: 232/255, green: 201/255, blue: 160/255))
+                .cornerRadius(20)
+        }
+        .disabled(isDisabled)
+    }
+}
+
+// データ数値セレクターコンポーネント
+struct DataNumberSelector: View {
+    @Binding var dataNumber: Int
+    
+    private func incrementNumber() {
+        if dataNumber < 200 {
+            dataNumber = min(200, dataNumber + 1)
+        }
+    }
+    
+    private func decrementNumber() {
+        if dataNumber > 0 {
+            dataNumber = max(1, dataNumber - 1)
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: decrementNumber) {
+                Image(systemName: "minus.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
+            }
+            .padding(.leading, 20)
+            
+            Spacer()
+                .frame(minWidth: 10)
+            
+            Text("\(dataNumber)")
+                .font(.system(size: 70, weight: .bold))
+                .frame(minWidth: 150)
+                .multilineTextAlignment(.center)
+            
+            Spacer()
+                .frame(minWidth: 10)
+            
+            Button(action: incrementNumber) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
+            }
+            .padding(.trailing, 20)
+        }
+        .frame(width: 200, height: 80)
     }
 }
