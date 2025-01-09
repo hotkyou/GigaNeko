@@ -250,7 +250,7 @@ struct StatisticsView: View {
         .onAppear {
             updatePredictions()
         }
-        .onChange(of: selectedSegment) { _ in
+        .onChange(of: selectedSegment) {
             updatePredictions()
         }
     }
