@@ -13,7 +13,7 @@ struct GigaNekoApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            LaunchScreenView()
         }
     }
 }
