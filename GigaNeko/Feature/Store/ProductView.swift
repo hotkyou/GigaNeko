@@ -8,11 +8,10 @@
 import SwiftUI
 
 struct ProductGrid: View {
-    let products: [(String, Int)]
+    let products: [(String, Int, String, String, String, String)]
     let columns: [GridItem]
-    let storeSystem: StoreSystem // StoreSystemインスタンスを受け取る
 
-    @State private var selectedProduct: (String, Int)?
+    @State private var selectedProduct: (String, Int, String, String, String, String)?
     @State private var showDetail = false
     @State private var isAppearing = false
 
@@ -20,7 +19,7 @@ struct ProductGrid: View {
         ZStack {
             LazyVGrid(columns: columns, spacing: 20) {
                 ForEach(products, id: \.0) { product in
-                    ProductView(productName: product.0, productPrice: product.1)
+                    ProductView(productName: product.0, productPrice: product.1, category: product.2, image: product.3)
                         .onTapGesture {
                             selectedProduct = product
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.6)) {
@@ -49,8 +48,10 @@ struct ProductGrid: View {
                 ProductDetailView(
                     productName: product.0,
                     productPrice: product.1,
-                    showDetail: $showDetail,
-                    storeSystem: storeSystem // インスタンスを渡す
+                    category: product.2,
+                    mainText: product.4,
+                    subText: product.5,
+                    showDetail: $showDetail
                 )
                 .scaleEffect(showDetail ? 1 : 0.5)
                 .opacity(showDetail ? 1 : 0)
@@ -64,10 +65,12 @@ struct ProductGrid: View {
 struct ProductView: View {
     let productName: String
     let productPrice: Int
+    let category: String
+    let image: String
     
     var body: some View {
         VStack(spacing: 15) {
-            Image("Food")
+            Image(image)
                 .resizable()
                 .frame(width: 100, height: 100)
             
@@ -75,15 +78,22 @@ struct ProductView: View {
                 .font(.body)
             
             HStack {
-                Image("Point")
-                    .resizable()
-                    .frame(width: 25, height: 25)
-                    .padding(.leading, 5)
-                
-                Text("\(productPrice)")
-                    .font(.system(size: 20, weight: .medium))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 5)
+                if category != "points"{
+                    Image("Point")
+                        .resizable()
+                        .frame(width: 20, height: 20)
+                        .padding(.leading, 4)
+                    
+                    Text("\(productPrice)")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 5)
+                }else{
+                    Text("￥\(productPrice)")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 5)
+                }
             }
             .frame(height: 40)
             .background(Color(red: 0.95, green: 0.95, blue: 0.95))
@@ -97,8 +107,12 @@ struct ProductView: View {
 struct ProductDetailView: View {
     let productName: String
     let productPrice: Int
+    let category: String
+    let mainText: String
+    let subText: String
     @Binding var showDetail: Bool
-    let storeSystem: StoreSystem // StoreSystemインスタンスを受け取る
+    
+    @EnvironmentObject var pointSystem: PointSystem
 
     var body: some View {
         VStack(spacing: 20) {
@@ -110,28 +124,31 @@ struct ProductDetailView: View {
                 .font(.title)
                 .bold()
 
-            Text("猫に与えられる餌アイテムです\n空腹ゲージを48時間回復します")
+            Text(mainText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            Text("※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます")
+            Text(subText)
                 .font(.footnote)
                 .foregroundColor(.red)
                 .padding(.horizontal)
 
             HStack {
-                Text("\(productPrice) pt")
-                    .padding(.horizontal)
+                if category != "points"{
+                    Text("\(productPrice) pt")
+                        .padding(.horizontal)
+                }else {
+                    Text("￥\(productPrice)")
+                        .padding(.horizontal)
+                }
 
                 Button("購入") {
-                    // StoreSystemインスタンスを通じてfeedメソッドを呼び出す
-                    storeSystem.feed(point: productPrice)
+                    pointSystem.store(point: productPrice, category: category)
                 }
                 .padding()
                 .background(Color.yellow.opacity(0.8))
                 .cornerRadius(10)
             }
-
             Button(action: {
                 withAnimation {
                     showDetail = false
@@ -155,13 +172,16 @@ struct ProductDetailView: View {
 
 
 #Preview {
-    let pointSystem = PointSystem() // 仮のPointSystemインスタンス
-    let storeSystem = StoreSystem(pointSystem: pointSystem)
+    let pointSystem = PointSystem() // PointSystemクラスを正しく実装していると仮定
 
     return ProductGrid(
-        products: [("普通の餌", 0), ("猫缶", 100), ("刺身", 200), ("またたび", 900)],
-        columns: [GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120))],
-        storeSystem: storeSystem // インスタンスを渡す
-    )
+        products: [
+            ("普通の餌", 0, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを24時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます"),
+            ("猫缶", 100, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを48時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます"),
+            ("刺身", 200, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを72時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます"),
+            ("またたび", 900, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを240時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます")
+        ],
+        columns: [GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120)), GridItem(.flexible(minimum: 120))]
+        )
+        .environmentObject(pointSystem)      // PointSystemを渡す
 }
-

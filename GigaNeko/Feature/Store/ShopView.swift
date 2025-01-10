@@ -8,14 +8,33 @@
 import SwiftUI
 
 struct ShopView: View {
-    @EnvironmentObject var pointSystem: PointSystem // PointSystemを受け取る
-    @StateObject private var storeSystem = StoreSystem() // 初期化時は空のStoreSystem
+    @EnvironmentObject var pointSystem: PointSystem
 
     let products = [
-        ("普通の餌", 0),
-        ("猫缶", 100),
-        ("刺身", 200),
-        ("またたび", 900)
+        ("普通の餌", 0, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを24時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます"),
+        ("猫缶", 100, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを48時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます"),
+        ("刺身", 200, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを72時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます"),
+        ("またたび", 900, "feed", "Food", "猫に与えられる餌アイテムです\n空腹ゲージを240時間回復します", "※ 新しく食べた餌の継続時間は今の継続時間には追加されず上書きされます")
+    ]
+    
+    let toys = [
+        ("猫じゃらし", 20, "toys", "Food", "ストレス値を20減少させることができます。", ""),
+    ]
+    
+    let presents = [
+        ("赤色の袋", 1000, "presents", "Food", "好感度が100上がります", ""),
+        ("青色の袋", 5000, "presents", "Food", "好感度が500上がります", ""),
+        ("黄色の袋", 8000, "presents", "Food", "好感度が1000上がります", "")
+    ]
+    
+    let points = [
+        ("120pt", 160, "points", "Food", "120pt獲得できます", ""),
+        ("380pt", 480, "points", "Food", "380pt獲得できます", ""),
+        ("800pt", 1000, "points", "Food", "800pt獲得できます", ""),
+        ("1200pt", 1500, "points", "Food", "1200pt獲得できます", ""),
+        ("2400pt", 3000, "points", "Food", "2400pt獲得できます", ""),
+        ("3900pt", 4900, "points", "Food", "3900pt獲得できます", ""),
+        ("8000pt", 10000, "points", "Food", "8000pt獲得できます", "")
     ]
 
     let columns = [
@@ -60,7 +79,6 @@ struct ShopView: View {
                         Button("test"){
                             pointSystem.test()
                         }
-                           
                     }
                     .frame(height: 50)
                     .background(Color.white)
@@ -97,16 +115,16 @@ struct ShopView: View {
                         ScrollView {
                             Group {
                                 SectionHeader(title: "えさ", id: "えさ")
-                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
+                                ProductGrid(products: products, columns: columns)
 
                                 SectionHeader(title: "おもちゃ", id: "おもちゃ")
-                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
+                                ProductGrid(products: toys, columns: columns)
 
                                 SectionHeader(title: "プレゼント", id: "プレゼント")
-                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
+                                ProductGrid(products: presents, columns: columns)
 
                                 SectionHeader(title: "ポイント", id: "ポイント")
-                                ProductGrid(products: products, columns: columns, storeSystem: storeSystem)
+                                ProductGrid(products: points, columns: columns)
                             }
                         }
                     }
@@ -115,9 +133,6 @@ struct ShopView: View {
                 .cornerRadius(10)
             }
             .padding(.horizontal, 64)
-        }
-        .onAppear {
-            storeSystem.updatePointSystem(pointSystem: pointSystem)
         }
     }
 }
@@ -137,7 +152,7 @@ struct SectionHeader: View {
 }
 
 #Preview {
-    let pointSystem = PointSystem()
-        return ShopView()
-            .environmentObject(pointSystem)
+    let pointSystem = PointSystem() // PointSystemクラスを正しく実装していると仮定
+    ShopView()
+        .environmentObject(pointSystem)      // PointSystemを渡す
 }
