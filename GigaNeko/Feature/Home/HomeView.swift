@@ -63,6 +63,8 @@ class ParticleSystem: ObservableObject {
 }
 
 struct HomeView: View {
+    @StateObject private var tutorialViewModel = TutorialViewModel()
+    @StateObject private var particleSystem = ParticleSystem()
     @State private var offsetY: CGFloat = 0
     @State private var movingDown = true
     @State private var showWelcomeScreen = false
@@ -70,7 +72,6 @@ struct HomeView: View {
     @State private var showSecondLaunchOverlay = false
     @State private var catName = ""
     @State private var dataNumber: Int = 0
-    @StateObject private var particleSystem = ParticleSystem()
     @State private var pettingStartTime: Date?
     @State private var lastDragLocation: CGPoint?
     @State private var isDragging = false
@@ -88,21 +89,27 @@ struct HomeView: View {
     
     // 初回起動時の処理を行うための初期化
     init() {
+        // UserDefaultsから初回起動フラグを取得
         let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
         let hasCatName = UserDefaults.shared.string(forKey: "catName") != nil
         
-        // 初回起動時はウェルカム画面を表示、それ以外は非表示
-        _showWelcomeScreen = State(initialValue: !hasLaunched)
+        // StateObjectの初期化
+        _tutorialViewModel = StateObject(wrappedValue: TutorialViewModel())
         
-        // 名前が設定されていない場合のみ名前入力画面を表示
-        _showFirstLaunchOverlay = State(initialValue: hasLaunched && !hasCatName)
+        // 初回起動時の処理
+        if !hasLaunched {
+            // チュートリアルを表示するように設定
+            tutorialViewModel.showTutorial = true
+            _showFirstLaunchOverlay = State(initialValue: false)
+        } else {
+            // 猫の名前が設定されていない場合は名前入力画面を表示
+            _showFirstLaunchOverlay = State(initialValue: !hasCatName)
+        }
         
-        // 保存された猫の名前を取得
+        // その他の初期化
         let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
-        
-        // 保存されたGB
-        let savedDataNumber = UserDefaults.standard.integer(forKey: "dataNumber")
+        let savedDataNumber = UserDefaults.shared.integer(forKey: "dataNumber")
         _dataNumber = State(initialValue: savedDataNumber)
     }
     
@@ -451,64 +458,30 @@ struct HomeView: View {
                 }
                 .edgesIgnoringSafeArea(.all)
                 
-                if showWelcomeScreen {
-                    // Tutorial画面
-                    ZStack {
-                        // 背景にグラデーションを追加
-                        LinearGradient(gradient: Gradient(colors: [Color.blue.opacity(0.6), Color.purple.opacity(0.6)]), startPoint: .topLeading, endPoint: .bottomTrailing)
-                            .ignoresSafeArea()
-                        
-                        VStack(spacing: 20) {
-                            Text("ようこそ！")
-                                .font(.system(size: 36, weight: .bold, design: .rounded))
-                                .foregroundColor(.white)
-                                .shadow(color: .black.opacity(0.3), radius: 2, x: 0, y: 2)
-                            
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 20)
-                                    .fill(Color(red: 255/255, green: 242/255, blue: 209/255))
-                                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
-                                
-                                VStack(spacing: 15) {
-                                    Image("Neko")
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fit)
-                                        .frame(width: 180)
-                                        .shadow(color: .gray.opacity(0.5), radius: 5, x: 0, y: 3)
-                                    
-                                    Text("インストールありがとうございます！")
-                                        .font(.system(size: 18, weight: .semibold, design: .rounded))
-                                        .foregroundColor(.gray)
-                                    
-                                    Text("このアプリの説明を始めていくよ")
-                                        .font(.system(size: 16, weight: .regular, design: .rounded))
-                                        .foregroundColor(.gray)
-                                        .multilineTextAlignment(.center)
-                                        .padding(.horizontal, 10)
-                                }
+                // チュートリアル画面
+                if tutorialViewModel.showTutorial {
+                    let content = tutorialViewModel.tutorials[tutorialViewModel.currentScreen]
+                    TutorialScreenView_Extended(
+                        content: content,
+                        buttonTitle: tutorialViewModel.isLastScreen ? "始める" : "次へ",
+                        buttonAction: {
+                            if tutorialViewModel.isLastScreen {
+                                // チュートリアル完了時の処理
+                                tutorialViewModel.showTutorial = false
+                                showFirstLaunchOverlay = true
+                            } else {
+                                tutorialViewModel.nextScreen()
                             }
-                            .frame(width: 300, height: 280)
-                            
-                            TutorialButton(
-                                title: "チュートリアル開始",
-                                width: 220,
-                                action: {
-                                    withAnimation {
-                                        showWelcomeScreen = false
-                                        showFirstLaunchOverlay = true
-                                    }
-                                }
-                            )
-                            .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 3)
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 10)
-                        )
-                        .padding(.horizontal, 20)
-                    }
+                        },
+                        isFirstScreen: tutorialViewModel.isFirstScreen,
+                        onBack: {
+                            tutorialViewModel.previousScreen()
+                        },
+                        currentPage: tutorialViewModel.currentScreen,
+                        totalPages: tutorialViewModel.tutorials.count
+                    )
+                    .transition(.opacity)
+                    .zIndex(2) // チュートリアルを最前面に表示
                 }
                 
                 // 名前入力オーバーレイ
@@ -535,6 +508,11 @@ struct HomeView: View {
             .edgesIgnoringSafeArea(.all)
         } // NavigationView
         .onAppear {
+            // アプリ起動時にチュートリアル表示状態を確認
+            let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
+            if !hasLaunched {
+                tutorialViewModel.showTutorial = true
+            }
             startTimer()
             updateValuesFromBackground()
             if loginFlag {
