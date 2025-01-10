@@ -126,6 +126,14 @@ struct HomeView: View {
         }
     }
     
+    private func condition(){
+        pointSystem.checkDate()
+    }
+    
+    private func caress(){
+        pointSystem.caressLike()
+    }
+    
     private func incrementNumber() {
         if dataNumber < 200 {
             dataNumber = min(200, dataNumber + 1)
@@ -139,11 +147,6 @@ struct HomeView: View {
     }
 
     // スタミナとストレス値
-    @State private var stamina: Double = 80
-    @State private var stress: Double = 15
-    @State private var staminatimer: Timer?
-    @AppStorage("lastActiveDate") private var lastActiveDate: Date = Date()
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -220,7 +223,7 @@ struct HomeView: View {
                                         .cornerRadius(20)
                                     
                                     HStack(spacing: 15) {
-                                        let truncatedStamina = floor(stamina)
+                                        let truncatedStamina = floor(pointSystem.stamina)
                                         // スタミナ表示
                                         HStack(spacing: 8) {
                                             Image("Stamina")
@@ -228,11 +231,11 @@ struct HomeView: View {
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text("\(Int(truncatedStamina))%")
+                                                Text("\(Int(pointSystem.stamina))%")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 12, weight: .medium))
                                                     .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: stamina / 100)
+                                                ProgressView(value: pointSystem.stamina / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.green)
                                             }
@@ -251,11 +254,11 @@ struct HomeView: View {
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text("\(Int(stress))%")
+                                                Text("\(Int(pointSystem.stress))%")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 12, weight: .medium))
                                                     .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: stress / 100)
+                                                ProgressView(value: Double(pointSystem.stress) / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.orange)
                                             }
@@ -267,41 +270,7 @@ struct HomeView: View {
                                 
                                 // ボタンとポイント表示
                                 HStack(spacing: 8) { // スペーシングを調整
-                                    // 飯ボタン
-                                    Button(action: recoverStamina) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "fork.knife")
-                                                .font(.system(size: 12))
-                                            Text("飯")
-                                                .font(.system(size: 14, weight: .medium))
-                                        }
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 10) // パディングを調整
-                                        .padding(.vertical, 8)
-                                        .background(Color.green)
-                                        .cornerRadius(15)
-                                    }
-                                    
-                                    // 遊ぶボタン
-                                    Button {
-                                        if stamina > 0 {
-                                            stamina -= 10
-                                            stress = max(0, stress - 5)
-                                        }
-                                    } label: {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: "party.popper")
-                                                .font(.system(size: 12))
-                                            Text("遊")
-                                                .font(.system(size: 14, weight: .medium))
-                                        }
-                                        .foregroundColor(.white)
-                                        .padding(.horizontal, 10) // パディングを調整
-                                        .padding(.vertical, 8)
-                                        .background(Color.blue)
-                                        .cornerRadius(15)
-                                    }
-                                    
+                                    Spacer()
                                     // ポイント表示
                                     ZStack {
                                         Rectangle()
@@ -310,6 +279,7 @@ struct HomeView: View {
                                             .frame(height: 28)
                                             .opacity(0.7)
                                             .cornerRadius(15)
+                                        
                                         
                                         HStack(spacing: 4) {
                                             Image("Point")
@@ -365,6 +335,8 @@ struct HomeView: View {
                                                             // 撫で始めたらタイマーを開始
                                                             pettingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
                                                                 particleSystem.createRisingHearts(in: frame)
+                                                                //好感度付与
+                                                                caress()
                                                             }
                                                         }
                                                         lastDragLocation = currentLocation
@@ -429,7 +401,7 @@ struct HomeView: View {
                                     isEditingName = true
                                 }) {
                                     HStack(spacing: 12) {
-                                        Text("Lv100")
+                                        Text("Lv \(pointSystem.like)")
                                             .foregroundColor(.gray)
                                             .font(.system(size: 14))
                                         
@@ -513,57 +485,16 @@ struct HomeView: View {
             if !hasLaunched {
                 tutorialViewModel.showTutorial = true
             }
-            startTimer()
-            updateValuesFromBackground()
+            condition()
             if loginFlag {
                 pointsystem()
                 loginFlag = false
             }
         }
         .onDisappear {
-            saveLastActiveDate()
+            condition()
         }
         .scrollDisabled(true)
-    }
-    // Timerを開始
-    private func startTimer() {
-        // 3分ごとにスタミナが減っていく処理
-        staminatimer = Timer.scheduledTimer(withTimeInterval: 180, repeats: true) { _ in
-            withAnimation {
-                if stamina > 0 {
-                    stamina -= 1
-                }
-            }
-        }
-    }
-    // バックグラウンド復帰時にスタミナとストレスを更新
-    private func updateValuesFromBackground() {
-        let currentDate = Date()
-        let elapsedTime = currentDate.timeIntervalSince(lastActiveDate) // 経過時間 (秒)
-        
-        // スタミナの減少: 3分ごとに1減少
-        let staminaToReduce = Int(elapsedTime / 180)
-        if staminaToReduce > 0 {
-            stamina = max(0, stamina - Double(staminaToReduce)) // スタミナが0未満にならないように
-        }
-        
-        // ストレスの増加: 5分ごとに1増加
-        let stressToIncrease = Int(elapsedTime / 300)
-        if stressToIncrease > 0 {
-            stress = min(100, stress + Double(stressToIncrease)) // ストレスが100を超えないように
-        }
-        
-        // タイムスタンプを現在時刻に更新
-        lastActiveDate = currentDate
-    }
-    
-    // アプリが閉じられる際にタイムスタンプを保存
-    private func saveLastActiveDate() {
-        lastActiveDate = Date()
-    }
-    // スタミナ回復処理
-    private func recoverStamina() {
-        stamina = min(100, stamina + 20) // スタミナを最大100まで回復
     }
 }
 
