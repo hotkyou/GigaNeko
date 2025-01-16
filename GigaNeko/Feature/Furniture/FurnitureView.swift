@@ -3,7 +3,6 @@ import SwiftUI
 struct FurnitureView: View {
     @StateObject private var viewModel = FurnitureViewModel()
     
-    @EnvironmentObject var pointSystem: PointSystem
     var body: some View {
         ZStack {
             LinearGradient(
@@ -21,6 +20,22 @@ struct FurnitureView: View {
                 }
                 .padding(.top, 8)
                 
+                // Main Content
+                ZStack {
+                    if let currentItem = viewModel.selectedItem {
+                        SwipeableView(
+                            item: currentItem,
+                            onSwipeLeft: { viewModel.nextItem() },
+                            onSwipeRight: { viewModel.previousItem() },
+                            canSwipeLeft: viewModel.currentIndex < viewModel.furnitureItems.count - 1,
+                            canSwipeRight: viewModel.currentIndex > 0
+                        )
+                        .transition(.asymmetric(
+                            insertion: .move(edge: .trailing).combined(with: .opacity),
+                            removal: .move(edge: .leading).combined(with: .opacity)
+                        ))
+                    }
+                    
                     // Navigation Buttons
                     HStack {
                         if viewModel.currentIndex > 0 {
@@ -68,3 +83,4 @@ struct FurnitureView: View {
             }
         }
     }
+}
