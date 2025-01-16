@@ -16,7 +16,7 @@ struct SettingView: View {
         (.init("square.and.arrow.up"), "アプリをシェアする", .share),
         (.init("exclamationmark.lock"), "利用規約", .terms),
         (.init("hand.raised"), "プライバシーポリシー", .privacy),
-        (.init("gift.fill"), "エンジニアに寄付", .gift)
+        (.init("note.text"), "プラン一覧", .plan)
     ]
     
     var body: some View {
@@ -93,7 +93,7 @@ struct SettingView: View {
 
 // Menu Item Type
 enum MenuItemType {
-    case review, share, terms, privacy, gift
+    case review, share, terms, privacy, plan
 }
 
 // Menu Item View
@@ -121,8 +121,8 @@ struct MenuItemView: View {
                 NavigationLink(destination: PrivacyPolicyView()) {
                     menuContent
                 }
-            case .gift:
-                NavigationLink(destination: SettingGift()) {
+            case .plan:
+                NavigationLink(destination: MobilePlansView()) {
                     menuContent
                 }
             }
