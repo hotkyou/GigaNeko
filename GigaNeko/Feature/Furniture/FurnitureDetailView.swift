@@ -4,38 +4,50 @@ struct FurnitureDetailView: View {
     let item: FurnitureItem
     let onPurchase: () -> Void
     @State private var isAnimating = false
+    @Environment(\.colorScheme) var colorScheme
     
     var body: some View {
-        VStack(spacing: Constants.Layout.spacing) {
-            Capsule()
-                .fill(Constants.Colors.text.opacity(0.2))
-                .frame(width: 40, height: 4)
-                .padding(.top, 12)
-            
-            // レベルとアイテム名
-            HStack(spacing: Constants.Layout.spacing) {
-                // レベルバッジ
+        VStack(spacing: 0) {
+            // Title and Level
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.name)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(Constants.Colors.text)
+                }
+                
+                Spacer()
+                
+                // Level Badge
                 Text("LV.\(item.level)")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(Constants.Colors.primary)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                     .background(
                         Capsule()
-                            .fill(Constants.Colors.primary.opacity(0.1))
+                            .fill(
+                                LinearGradient(
+                                    gradient: Gradient(colors: [Constants.Colors.primary, Constants.Colors.secondary]),
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
                     )
-                
-                // アイテム名
-                Text(item.name)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(Constants.Colors.text)
             }
-            .padding(.top, 8)
+            .padding(.top, 20)
+            .padding(.horizontal)
             
-            // エフェクト表示
-            HStack {
+            // Divider
+            Rectangle()
+                .fill(Color.gray.opacity(0.2))
+                .frame(height: 1)
+            
+            // Effect
+            HStack(spacing: 15) {
                 Image(systemName: "sparkles")
+                    .font(.system(size: 24))
                     .foregroundColor(Constants.Colors.accent)
                     .scaleEffect(isAnimating ? 1.1 : 1.0)
                     .animation(
@@ -44,25 +56,30 @@ struct FurnitureDetailView: View {
                     )
                 
                 Text(item.effect)
-                    .font(.system(size: 18))
+                    .font(.body)
                     .foregroundColor(Constants.Colors.text.opacity(0.8))
             }
-            .padding(.vertical, 8)
+            .padding(.vertical, 15)
             
-            // 購入ボタン
+            // Purchase Button
             Button(action: onPurchase) {
-                HStack(spacing: 16) {
-                    Image("Point")
-                        .resizable()
-                        .frame(width: 24, height: 24)
+                HStack {
+                    Text("購入する")
+                        .fontWeight(.semibold)
                     
-                    Text("\(item.pointCost)pt")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.white)
+                    Spacer()
+                    
+                    HStack(spacing: 8) {
+                        Image("Point")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                        
+                        Text("\(item.pointCost)")
+                            .fontWeight(.bold)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
+                .foregroundColor(.white)
+                .padding()
                 .background(
                     LinearGradient(
                         gradient: Gradient(colors: Constants.mainGradient),
@@ -70,23 +87,20 @@ struct FurnitureDetailView: View {
                         endPoint: .trailing
                     )
                 )
-                .clipShape(RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius))
-                .shadow(color: Constants.Shadows.medium, radius: 10, x: 0, y: 5)
+                .cornerRadius(15)
+                .shadow(color: Constants.Colors.primary.opacity(0.3), radius: 10, x: 0, y: 5)
             }
-            .padding(.vertical, 16)
-            
-            Spacer()
+            .padding(.horizontal)
+            .padding(.bottom, 25)
         }
-        .padding(.horizontal, 24)
-        .frame(maxWidth: .infinity)
+        .padding(.top)
         .background(
-            RoundedRectangle(cornerRadius: 32)
-                .fill(Constants.Colors.background)
+            Rectangle()
+                .fill(colorScheme == .dark ? Color.black : Color.white)
                 .shadow(color: Constants.Shadows.large, radius: 20, y: -8)
         )
         .onAppear {
             isAnimating = true
         }
-        .ignoresSafeArea(edges: .bottom)
     }
 }

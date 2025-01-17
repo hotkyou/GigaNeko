@@ -10,7 +10,7 @@ struct FurnitureView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .ignoresSafeArea()
+            .edgesIgnoringSafeArea(.top)
             
             VStack(spacing: 0) {
                 // Points Display
@@ -19,6 +19,9 @@ struct FurnitureView: View {
                     PointsView(points: viewModel.availablePoints)
                 }
                 .padding(.top, 8)
+                .padding(.horizontal)
+                
+                Spacer(minLength: 20)
                 
                 // Main Content
                 ZStack {
@@ -64,7 +67,9 @@ struct FurnitureView: View {
                     }
                     .padding(.horizontal, 32)
                 }
-                .padding(.vertical, 32)
+                .frame(maxHeight: .infinity)
+                
+                Spacer(minLength: 20)
                 
                 // Page Indicator
                 PageIndicator(
