@@ -20,37 +20,36 @@ struct SettingView: View {
     ]
     
     var body: some View {
-        NavigationView{
-            ZStack {
-                //カラーストップのグラデーション
-                LinearGradient(
-                    gradient: Gradient(colors: [
-                        Color(red: 225/255, green: 255/255, blue: 203/255), // #E1FFCB
-                        Color(red: 255/255, green: 242/255, blue: 209/255)  // #FFF2D1
-                    ]),
-                    startPoint: .top,
-                    endPoint: .bottom
-                ).edgesIgnoringSafeArea(.all)
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header
-                        Text("設定")
-                            .font(.system(size: 34, weight: .bold))
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal)
-                        
-                        // Menu Items
-                        VStack(spacing: 2) {
-                            ForEach(menuItems.indices, id: \.self) { index in
-                                let item = menuItems[index]
-                                MenuItemView(icon: item.icon,
-                                             title: item.title,
-                                             type: item.type)
-                                
-                                if index != menuItems.count - 1 {
-                                    Divider()
-                                        .padding(.horizontal)
-                                }
+
+        ZStack {
+            //カラーストップのグラデーション
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 225/255, green: 255/255, blue: 203/255), // #E1FFCB
+                    Color(red: 255/255, green: 242/255, blue: 209/255)  // #FFF2D1
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            ).edgesIgnoringSafeArea(.top)
+            ScrollView {
+                VStack(spacing: 24) {
+                    // Header
+                    Text("設定")
+                        .font(.system(size: 34, weight: .bold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal)
+                    
+                    // Menu Items
+                    VStack(spacing: 2) {
+                        ForEach(menuItems.indices, id: \.self) { index in
+                            let item = menuItems[index]
+                            MenuItemView(icon: item.icon,
+                                         title: item.title,
+                                         type: item.type)
+                            
+                            if index != menuItems.count - 1 {
+                                Divider()
+                                    .padding(.horizontal)
                             }
                         }
                         .background(
