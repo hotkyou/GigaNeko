@@ -30,7 +30,7 @@ struct SettingView: View {
                     ]),
                     startPoint: .top,
                     endPoint: .bottom
-                ).edgesIgnoringSafeArea(.all)
+                ).edgesIgnoringSafeArea(.top)
                 ScrollView {
                     VStack(spacing: 24) {
                         // Header
