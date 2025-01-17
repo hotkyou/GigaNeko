@@ -9,9 +9,7 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedItem = 0
-    
-    // PointSystemのインスタンスを作成
-        let pointSystem = PointSystem()
+    let pointSystem = PointSystem()
     
     var body: some View {
         TabView(selection:$selectedItem){
@@ -25,7 +23,7 @@ struct MainTabView: View {
                     Image(systemName: "table.furniture")
                     Text("家具")
                 }.tag(1)
-            ShopView(pointSystem: pointSystem)
+            ShopView()
                 .tabItem {
                     Image(systemName: "bag.fill")
                     Text("ショップ")
@@ -36,10 +34,12 @@ struct MainTabView: View {
                     Text("設定")
                 }.tag(4)
         }
+        .environmentObject(pointSystem)
     }
 }
 
 
 #Preview {
     MainTabView()
+        .environmentObject(PointSystem())
 }

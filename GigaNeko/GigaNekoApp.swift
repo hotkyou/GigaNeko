@@ -13,7 +13,7 @@ struct GigaNekoApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            LaunchScreenView()
         }
     }
 }
@@ -33,23 +33,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         print("アプリ起動")
         return true
     }
-    
-//    func startDataUsageMonitoring() {
-//        let attributes = DataUsageMonitorAttributes(name: "Data Usage")
-//        let contentState = DataUsageMonitorAttributes.ContentState(emoji: "📊")
-//        
-//        do {
-//            let initialContentState = ActivityContent(state: contentState, staleDate: nil)
-//            let activity = try Activity<DataUsageMonitorAttributes>.request(
-//                attributes: attributes,
-//                content: initialContentState,
-//                pushType: nil
-//            )
-//            print("Requested a Live Activity \(activity.id)")
-//        } catch (let error) {
-//            print("Error requesting Live Activity \(error.localizedDescription)")
-//        }
-//    }
     
     // タスクのスケジュールを設定する関数
     func scheduleAppRefresh() {

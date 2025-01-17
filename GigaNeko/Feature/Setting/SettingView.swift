@@ -16,10 +16,11 @@ struct SettingView: View {
         (.init("square.and.arrow.up"), "アプリをシェアする", .share),
         (.init("exclamationmark.lock"), "利用規約", .terms),
         (.init("hand.raised"), "プライバシーポリシー", .privacy),
-        (.init("gift.fill"), "エンジニアに寄付", .gift)
+        (.init("note.text"), "プラン一覧", .plan)
     ]
     
     var body: some View {
+
         ZStack {
             //カラーストップのグラデーション
             LinearGradient(
@@ -51,39 +52,39 @@ struct SettingView: View {
                                     .padding(.horizontal)
                             }
                         }
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color.black.opacity(0.05),
+                                        radius: 10, x: 0, y: 5)
+                        )
+                        .padding(.horizontal)
+                        
+                        // Notification Toggle
+                        HStack {
+                            Image(systemName: "bell.fill")
+                                .font(.system(size: 22))
+                                .foregroundColor(.primary)
+                            
+                            Text("通知")
+                                .font(.system(size: 17))
+                            
+                            Spacer()
+                            
+                            Toggle("", isOn: $toggleState1)
+                                .toggleStyle(SwitchToggleStyle(tint: Color.orange))
+                        }
+                        .padding()
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(.systemBackground))
+                                .shadow(color: Color.black.opacity(0.05),
+                                        radius: 10, x: 0, y: 5)
+                        )
+                        .padding(.horizontal)
                     }
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.05),
-                                    radius: 10, x: 0, y: 5)
-                    )
-                    .padding(.horizontal)
-                    
-                    // Notification Toggle
-                    HStack {
-                        Image(systemName: "bell.fill")
-                            .font(.system(size: 22))
-                            .foregroundColor(.primary)
-                        
-                        Text("通知")
-                            .font(.system(size: 17))
-                        
-                        Spacer()
-                        
-                        Toggle("", isOn: $toggleState1)
-                            .toggleStyle(SwitchToggleStyle(tint: Color.orange))
-                    }
-                    .padding()
-                    .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color(.systemBackground))
-                            .shadow(color: Color.black.opacity(0.05),
-                                    radius: 10, x: 0, y: 5)
-                    )
-                    .padding(.horizontal)
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
             }
         }
     }
@@ -91,7 +92,7 @@ struct SettingView: View {
 
 // Menu Item Type
 enum MenuItemType {
-    case review, share, terms, privacy, gift
+    case review, share, terms, privacy, plan
 }
 
 // Menu Item View
@@ -119,8 +120,8 @@ struct MenuItemView: View {
                 NavigationLink(destination: PrivacyPolicyView()) {
                     menuContent
                 }
-            case .gift:
-                NavigationLink(destination: SettingGift()) {
+            case .plan:
+                NavigationLink(destination: MobilePlansView()) {
                     menuContent
                 }
             }

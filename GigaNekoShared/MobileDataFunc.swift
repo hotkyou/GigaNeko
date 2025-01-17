@@ -38,7 +38,12 @@ func saveDataUsage() {
     var wifiDifference: UInt64
     var wwanDifference: UInt64
     
-    if currentLaunchTime <  previousLaunchTime {
+    if dataUsageArray.isEmpty {
+        print("初回起動")
+        // 初回起動時は0を記録
+        wifiDifference = 0
+        wwanDifference = 0
+    } else if currentLaunchTime <  previousLaunchTime {
         print("再起動")
         // 再起動後の処理
         wifiDifference = currentWifi
@@ -53,26 +58,27 @@ func saveDataUsage() {
             wwanDifference = currentWwan - previousWwan
         } else {
             // 何らかのタイミングで前の値よりも下がった場合
-            // 一応0を格納
             print("カウンターリセット検出")
-            wifiDifference = 0
-            wwanDifference = 0
+            return
         }
     }
+    // 差DBに入れるためのデータ
+    let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
+    let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
+    dataUsageArray.append(differenceEntry)
     
-    // 過去との差が0か
-    if wifiDifference != 0 && wwanDifference != 0 {
-        // 差DBに入れるためのデータ
-        let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
-        let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
-        dataUsageArray.append(differenceEntry)
-        
-        UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
-        UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
-        UserDefaults.shared.synchronize()
-        
-        print("Data Usage Array with Differences: \(dataUsageArray)")
+    UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
+    UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
+    UserDefaults.shared.synchronize()
+    
+    print("Data Usage Array with Differences: \(dataUsageArray)")
+}
+
+func getLatestDataUsage() -> [String: Any]? {
+    if let dataUsageArray = UserDefaults.shared.array(forKey: "dataUsage") as? [[String: Any]] {
+        return dataUsageArray.last // 最新のデータを返す
     }
+    return nil
 }
 
 // 日ごとに時間単位でデータを取得
@@ -191,6 +197,30 @@ func loadMonthlyDataUsage(for date: Date) -> [DailyDataUsage] {
     }
     
     return dailyDataUsage
+}
+
+func getCurrentMonthUsage() -> (wifi: Double, wwan: Double) {
+    let calendar = Calendar.current
+    let currentDate = Date()
+    
+    guard let startOfMonth = calendar.date(from: calendar.dateComponents([.year, .month], from: currentDate)) else {
+        return (0, 0)
+    }
+    
+    // 月間データを取得
+    let monthlyData = loadMonthlyDataUsage(for: startOfMonth)
+    
+    // WiFiの合計を計算
+    let totalWifi = monthlyData.reduce(0.0) { sum, data in
+        sum + (Double(data.wifi) / (1024 * 1024 * 1024))
+    }
+    
+    // モバイルデータの合計を計算
+    let totalWwan = monthlyData.reduce(0.0) { sum, data in
+        sum + (Double(data.wwan) / (1024 * 1024 * 1024))
+    }
+    
+    return (totalWifi, totalWwan)
 }
 
 func launchTime() -> TimeInterval {
