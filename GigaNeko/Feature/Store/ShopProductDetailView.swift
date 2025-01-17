@@ -99,6 +99,6 @@ struct ShopProductDetailView: View {
         .background(Color.white)
         .cornerRadius(24)
         .shadow(radius: 8)
-        .padding(.horizontal, 40)
+        .padding(.horizontal, 20)
     }
 }

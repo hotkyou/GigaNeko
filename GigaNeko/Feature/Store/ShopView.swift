@@ -10,8 +10,16 @@ struct ShopView: View {
     
     var body: some View {
         ZStack {
-            Color(UIColor.systemGray6)
-                .ignoresSafeArea()
+            LinearGradient(
+                gradient: Gradient(colors: [
+                    Color(red: 255/255, green: 240/255, blue: 245/255),  // 薄いピンク
+                    Color(red: 255/255, green: 228/255, blue: 225/255),  // ミスティローズ
+                    Color(red: 255/255, green: 245/255, blue: 238/255)   // セピア調
+                ]),
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .edgesIgnoringSafeArea(.top)
             
             VStack(spacing: 16) {
                 ShopHeaderView()
