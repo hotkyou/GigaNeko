@@ -9,7 +9,6 @@ import SwiftUI
 
 struct MainTabView: View {
     @State private var selectedItem = 0
-    let pointSystem = PointSystem()
     
     var body: some View {
         TabView(selection:$selectedItem){
@@ -34,12 +33,12 @@ struct MainTabView: View {
                     Text("設定")
                 }.tag(4)
         }
-        .environmentObject(pointSystem)
+        .environmentObject(GiganekoPoint.shared)
     }
 }
 
 
 #Preview {
     MainTabView()
-        .environmentObject(PointSystem())
+        .environmentObject(GiganekoPoint.shared)
 }

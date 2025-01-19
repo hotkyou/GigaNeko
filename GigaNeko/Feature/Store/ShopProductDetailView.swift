@@ -4,10 +4,10 @@ struct ShopProductDetailView: View {
     let product: ShopProduct
     @Binding var isShowing: Bool
     let onPurchase: () -> Void
-    @EnvironmentObject var pointSystem: PointSystem
+    let giganekoPoint = GiganekoPoint.shared
     
     private var canPurchase: Bool {
-        product.category == .points || pointSystem.currentPoints >= product.price
+        product.category == .points || giganekoPoint.currentPoints >= product.price
     }
     
     var body: some View {

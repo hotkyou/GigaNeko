@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ShopHeaderView: View {
-    @EnvironmentObject var pointSystem: PointSystem
+    let giganekoPoint = GiganekoPoint.shared
     
     var body: some View {
         HStack {
@@ -15,7 +15,7 @@ struct ShopHeaderView: View {
                 Image("Point")
                     .resizable()
                     .frame(width: 24, height: 24)
-                Text("\(pointSystem.currentPoints)")
+                Text("\(giganekoPoint.currentPoints)")
                     .font(.headline)
                     .foregroundColor(.black)
             }
