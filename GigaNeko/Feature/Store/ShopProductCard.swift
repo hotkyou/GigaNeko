@@ -3,10 +3,10 @@ import SwiftUI
 struct ShopProductCard: View {
     let product: ShopProduct
     let onSelect: (ShopProduct) -> Void
-    @EnvironmentObject var pointSystem: PointSystem
+    let giganekoPoint = GiganekoPoint.shared
     
     private var canPurchase: Bool {
-        product.category == .points || pointSystem.currentPoints >= product.price
+        product.category == .points || giganekoPoint.currentPoints >= product.price
     }
     
     var body: some View {
@@ -80,7 +80,7 @@ struct ShopProductCard: View {
                                 .foregroundColor(.gray)
                                 .fixedSize(horizontal: true, vertical: false)
                             HStack(spacing: 2) {
-                                Text("\(product.price - pointSystem.currentPoints)")
+                                Text("\(product.price - giganekoPoint.currentPoints)")
                                     .font(.system(size: 12, weight: .bold))
                                 Text("pt不足")
                                     .font(.system(size: 10))

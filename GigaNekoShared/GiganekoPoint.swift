@@ -1,10 +1,16 @@
 import Foundation
 
-class PointSystem: ObservableObject {
+class GiganekoPoint: ObservableObject {
+    
+    static let shared = GiganekoPoint()
+    
     // MARK: - 公開プロパティ
     ///現在のポイント
     @Published var currentPoints: Int {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.currentPoints, value: currentPoints) }
+    }
+    @Published var addp: Double {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.addp, value: addp) }
     }
     ///一時間あたりのポイント
     @Published var pointsPerGB: Int {
@@ -30,56 +36,53 @@ class PointSystem: ObservableObject {
     @Published var like: Int {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: like) }
     }
-    
     ///好感度経験値
     @Published var likeExperience: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: likeExperience) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.likeExperience, value: likeExperience) }
     }
-    
     ///好感度レベルアップに必要な経験値
     @Published var likeUp: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: likeUp) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.likeUp, value: likeUp) }
     }
-    
     ///キャットタワー効果ポイント
     @Published var addLike: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: addLike) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.addLike, value: addLike) }
     }
     ///招き猫効果のポイント
     @Published var addPoint: Double {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: addPoint) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.addPoint, value: addPoint) }
     }
     ///宝箱効果のポイント
     @Published var addPresents: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: addPresents) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.addPresents, value: addPresents) }
     }
     ///招き猫レベル
     @Published var manekineko: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: manekineko) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.manekineko, value: manekineko) }
     }
     ///招き猫をレベルUPに必要なポイント
     @Published var mlevelUp: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: mlevelUp) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.mlevelUp, value: mlevelUp) }
     }
     ///キャットタワーレベル
     @Published var catTower: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: catTower) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.catTower, value: catTower) }
     }
     ///キャットタワーレベルUPに必要なポイント
     @Published var clevelUp: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: clevelUp) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.clevelUp, value: clevelUp) }
     }
     ///宝箱レベル
     @Published var treasure: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: treasure) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.treasure, value: treasure) }
     }
     ///宝箱レベルUPに必要なポイント
     @Published var tlevelUp: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: tlevelUp) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.tlevelUp, value: tlevelUp) }
     }
     ///最終ログイン
     @Published var lastLogin: Date {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.like, value: lastLogin) }
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.lastLogin, value: lastLogin) }
     }
     @Published var alertMessage: String?
 
@@ -92,50 +95,51 @@ class PointSystem: ObservableObject {
 
     // UserDefaultsキー
     private struct UserDefaultsKeys {
-        static let currentPoints = "PointSystem.currentPoints"
-        static let pointsPerGB = "PointSystem.pointsPerGB"
-        static let stamina = "PointSystem.stamina"
-        static let staminaTime = "PointSystem.staminaTime"
-        static let perhourStamina = "PointSystem.perhourStamina"
-        static let stress = "PointSystem.stress"
-        static let like = "PointSystem.like"
-        static let likeExperience = "PointSystem.likeExperience"
-        static let likeUp = "PointSystem.likeUp"
-        static let addLike = "PointSystem.addLike"
-        static let addPoint = "PointSystem.addPoint"
-        static let addPresents = "PointSystem.addPresents"
-        static let manekineko = "PointSystem.manekineko"
-        static let mlevelUp = "PointSystem.mlevelUp"
-        static let catTower = "PointSystem.catTower"
-        static let clevelUp = "PointSystem.mlevelUp"
-        static let treasure = "PointSystem.treasure"
-        static let tlevelUp = "PointSystem.mlevelUp"
-        static let lastLogin = "PointSystem.lastLogin"
-        
+        static let currentPoints = "GiganekoPoint.currentPoints"
+        static let addp = "GiganekoPoint.addp"
+        static let pointsPerGB = "GiganekoPoint.pointsPerGB"
+        static let stamina = "GiganekoPoint.stamina"
+        static let staminaTime = "GiganekoPoint.staminaTime"
+        static let perhourStamina = "GiganekoPoint.perhourStamina"
+        static let stress = "GiganekoPoint.stress"
+        static let like = "GiganekoPoint.like"
+        static let likeExperience = "GiganekoPoint.likeExperience"
+        static let likeUp = "GiganekoPoint.likeUp"
+        static let addLike = "GiganekoPoint.addLike"
+        static let addPoint = "GiganekoPoint.addPoint"
+        static let addPresents = "GiganekoPoint.addPresents"
+        static let manekineko = "GiganekoPoint.manekineko"
+        static let mlevelUp = "GiganekoPoint.mlevelUp"
+        static let catTower = "GiganekoPoint.catTower"
+        static let clevelUp = "GiganekoPoint.mlevelUp"
+        static let treasure = "GiganekoPoint.treasure"
+        static let tlevelUp = "GiganekoPoint.mlevelUp"
+        static let lastLogin = "GiganekoPoint.lastLogin"
     }
 
     // MARK: - 初期化
     init() {
         // プロパティを直接初期化
-        self.currentPoints = UserDefaults.standard.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 0
-        self.pointsPerGB = UserDefaults.standard.value(forKey: UserDefaultsKeys.pointsPerGB) as? Int ?? 0
-        self.stamina = UserDefaults.standard.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 51.0
-        self.staminaTime = UserDefaults.standard.value(forKey: UserDefaultsKeys.staminaTime) as? Int ?? 24
-        self.perhourStamina = UserDefaults.standard.value(forKey: UserDefaultsKeys.perhourStamina) as? Double ?? 4.1666666667
-        self.stress = UserDefaults.standard.value(forKey: UserDefaultsKeys.stress) as? Int ?? 0
-        self.like = UserDefaults.standard.value(forKey: UserDefaultsKeys.like) as? Int ?? 1
-        self.likeExperience = UserDefaults.standard.value(forKey: UserDefaultsKeys.likeExperience) as? Int ?? 0
-        self.likeUp = UserDefaults.standard.value(forKey: UserDefaultsKeys.likeUp) as? Int ?? 200
-        self.addLike = UserDefaults.standard.value(forKey: UserDefaultsKeys.addLike) as? Int ?? 10
-        self.addPoint = UserDefaults.standard.value(forKey: UserDefaultsKeys.addPoint) as? Double ?? 1
-        self.addPresents = UserDefaults.standard.value(forKey: UserDefaultsKeys.addPresents) as? Int ?? 10
-        self.manekineko = UserDefaults.standard.value(forKey: UserDefaultsKeys.manekineko) as? Int ?? 0
-        self.mlevelUp = UserDefaults.standard.value(forKey: UserDefaultsKeys.mlevelUp) as? Int ?? 1000
-        self.catTower = UserDefaults.standard.value(forKey: UserDefaultsKeys.catTower) as? Int ?? 0
-        self.clevelUp = UserDefaults.standard.value(forKey: UserDefaultsKeys.mlevelUp) as? Int ?? 1000
-        self.treasure = UserDefaults.standard.value(forKey: UserDefaultsKeys.treasure) as? Int ?? 0
-        self.tlevelUp = UserDefaults.standard.value(forKey: UserDefaultsKeys.tlevelUp) as? Int ?? 1000
-        if let savedDate = UserDefaults.standard.object(forKey: UserDefaultsKeys.lastLogin) as? Date {
+        self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 0
+        self.addp = UserDefaults.shared.value(forKey: UserDefaultsKeys.addp) as? Double ?? 0.0
+        self.pointsPerGB = UserDefaults.shared.value(forKey: UserDefaultsKeys.pointsPerGB) as? Int ?? 0
+        self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 51.0
+        self.staminaTime = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaTime) as? Int ?? 24
+        self.perhourStamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.perhourStamina) as? Double ?? 4.1666666667
+        self.stress = UserDefaults.shared.value(forKey: UserDefaultsKeys.stress) as? Int ?? 0
+        self.like = UserDefaults.shared.value(forKey: UserDefaultsKeys.like) as? Int ?? 1
+        self.likeExperience = UserDefaults.shared.value(forKey: UserDefaultsKeys.likeExperience) as? Int ?? 0
+        self.likeUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.likeUp) as? Int ?? 200
+        self.addLike = UserDefaults.shared.value(forKey: UserDefaultsKeys.addLike) as? Int ?? 10
+        self.addPoint = UserDefaults.shared.value(forKey: UserDefaultsKeys.addPoint) as? Double ?? 1
+        self.addPresents = UserDefaults.shared.value(forKey: UserDefaultsKeys.addPresents) as? Int ?? 10
+        self.manekineko = UserDefaults.shared.value(forKey: UserDefaultsKeys.manekineko) as? Int ?? 0
+        self.mlevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.mlevelUp) as? Int ?? 1000
+        self.catTower = UserDefaults.shared.value(forKey: UserDefaultsKeys.catTower) as? Int ?? 0
+        self.clevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.mlevelUp) as? Int ?? 1000
+        self.treasure = UserDefaults.shared.value(forKey: UserDefaultsKeys.treasure) as? Int ?? 0
+        self.tlevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.tlevelUp) as? Int ?? 1000
+        if let savedDate = UserDefaults.shared.object(forKey: UserDefaultsKeys.lastLogin) as? Date {
                 self.lastLogin = savedDate
             } else {
                 self.lastLogin = Date()
@@ -148,21 +152,18 @@ class PointSystem: ObservableObject {
     func calculatePointsPerGB(settingDataGB: Int) {
         guard settingDataGB > 0 else { return }
         pointsPerGB = Self.maxPoints / settingDataGB
+        print("1GBあたりのポイント量を計算")
     }
 
     /// データ使用量に基づくポイント追加
     func calculatePoints(oneMonthData: Double) {
+        
         let getPoints = Double(pointsPerGB) * oneMonthData
         let addition = getPoints * (addPoint / 100)
         let points = getPoints + addition
-        
-        guard points.isFinite else {
-            alertMessage = "無効なポイント計算結果: \(points)"
-            return
-        }
-        currentPoints = min(currentPoints + Int(points), Self.maxPoints)
+        currentPoints = currentPoints + Int(points)
+        print("データ使用量に基づくポイント追加")
     }
-
     /// ポイントを消費
     func consumePoints(consumptionPoints: Int)-> Bool {
         if consumptionPoints > currentPoints {
@@ -341,6 +342,6 @@ class PointSystem: ObservableObject {
 
     /// UserDefaultsに保存
     private func saveToUserDefaults<T>(key: String, value: T) {
-        UserDefaults.standard.set(value, forKey: key)
+        UserDefaults.shared.set(value, forKey: key)
     }
 }

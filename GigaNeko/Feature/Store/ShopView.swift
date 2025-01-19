@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ShopView: View {
-    @EnvironmentObject var pointSystem: PointSystem
+    let giganekoPoint = GiganekoPoint.shared
     @State private var selectedTab = "えさ"
     @State private var selectedProduct: ShopProduct?
     @State private var showingProductDetail = false
@@ -79,8 +79,8 @@ struct ShopView: View {
     }
     
     private func performPurchase(product: ShopProduct) {
-        if product.category == .points || pointSystem.currentPoints >= product.price {
-            pointSystem.store(point: product.price, category: product.category.rawValue)
+        if product.category == .points || giganekoPoint.currentPoints >= product.price {
+            giganekoPoint.store(point: product.price, category: product.category.rawValue)
             withAnimation {
                 showingProductDetail = false
             }

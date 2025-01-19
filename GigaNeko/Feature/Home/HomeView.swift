@@ -79,13 +79,9 @@ struct HomeView: View {
     @State private var isEditingName = false
     @State private var tempCatName = ""
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
-    @State private var loginFlag: Bool = true
-    
-
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
     private let dragThreshold: CGFloat = 20.0  // ドラッグ判定の閾値
-    
-    @EnvironmentObject var pointSystem: PointSystem
+    let giganekoPoint = GiganekoPoint.shared
     
     // 初回起動時の処理を行うための初期化
     init() {
@@ -113,25 +109,12 @@ struct HomeView: View {
         _dataNumber = State(initialValue: savedDataNumber)
     }
     
-    private func pointsystem(){
-        if let latestUsage = getLatestDataUsage() {
-            if let wwan = latestUsage["wwan"] as? UInt64{
-                let wwanInGB = Double(wwan) / 1_073_741_824
-                let settingData = Int(dataNumber)
-                pointSystem.calculatePointsPerGB(settingDataGB: settingData)
-                pointSystem.calculatePoints(oneMonthData: Double(wwanInGB))
-            }
-        } else {
-            print("No latest data usage found.")
-        }
-    }
-    
     private func condition(){
-        pointSystem.checkDate()
+        giganekoPoint.checkDate()
     }
     
     private func caress(){
-        pointSystem.caressLike()
+        giganekoPoint.caressLike()
     }
     
     private func incrementNumber() {
@@ -223,7 +206,7 @@ struct HomeView: View {
                                         .cornerRadius(20)
                                     
                                     HStack(spacing: 15) {
-                                        let truncatedStamina = floor(pointSystem.stamina)
+                                        let truncatedStamina = floor(giganekoPoint.stamina)
                                         // スタミナ表示
                                         HStack(spacing: 8) {
                                             Image("Stamina")
@@ -231,11 +214,11 @@ struct HomeView: View {
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text("\(Int(pointSystem.stamina))%")
+                                                Text("\(Int(giganekoPoint.stamina))%")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 12, weight: .medium))
                                                     .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: pointSystem.stamina / 100)
+                                                ProgressView(value: giganekoPoint.stamina / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.green)
                                             }
@@ -254,11 +237,11 @@ struct HomeView: View {
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text("\(Int(pointSystem.stress))%")
+                                                Text("\(Int(giganekoPoint.stress))%")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 12, weight: .medium))
                                                     .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: Double(pointSystem.stress) / 100)
+                                                ProgressView(value: Double(giganekoPoint.stress) / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.orange)
                                             }
@@ -286,7 +269,7 @@ struct HomeView: View {
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 16, height: 16)
-                                            Text("\(pointSystem.currentPoints)")
+                                            Text("\(giganekoPoint.currentPoints)")
                                                 .foregroundColor(.gray)
                                                 .font(.system(size: 14, weight: .medium))
                                                 .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
@@ -401,7 +384,7 @@ struct HomeView: View {
                                     isEditingName = true
                                 }) {
                                     HStack(spacing: 12) {
-                                        Text("Lv \(pointSystem.like)")
+                                        Text("Lv \(giganekoPoint.like)")
                                             .foregroundColor(.gray)
                                             .font(.system(size: 14))
                                         
@@ -486,10 +469,6 @@ struct HomeView: View {
                 tutorialViewModel.showTutorial = true
             }
             condition()
-            if loginFlag {
-                pointsystem()
-                loginFlag = false
-            }
         }
         .onDisappear {
             condition()
@@ -501,7 +480,6 @@ struct HomeView: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
-            .environmentObject(PointSystem())
     }
 }
 
@@ -632,7 +610,7 @@ struct DataInputView: View {
                         action: {
                             if dataNumber > 0 && dataNumber <= 200 {
                                 UserDefaults.shared.set(catName, forKey: "catName")
-                                UserDefaults.standard.set(dataNumber, forKey: "dataNumber")
+                                UserDefaults.shared.set(dataNumber, forKey: "dataNumber")
                                 UserDefaults.shared.set(true, forKey: "hasLaunched")
                                 withAnimation(.easeOut(duration: 0.3)) {
                                     showSecondLaunchOverlay = false
