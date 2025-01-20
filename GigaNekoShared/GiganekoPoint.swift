@@ -35,6 +35,11 @@ class GiganekoPoint: ObservableObject {
     @Published var staminaMinutes: Int {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.staminaMinutes, value: staminaMinutes) }
     }
+    
+    //スタミナ秒
+    @Published var staminaSeconds: Int {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.staminaSeconds, value: staminaSeconds) }
+    }
     ///一時間あたりのスタミナ
     @Published var maxStamina: Double {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.maxStamina, value: maxStamina) }
@@ -113,6 +118,7 @@ class GiganekoPoint: ObservableObject {
         static let staminaTime = "GiganekoPoint.staminaTime"
         static let staminaHours = "GiganekoPoint.staminaHours"
         static let staminaMinutes = "GiganekoPoint.staminaMinutes"
+        static let staminaSeconds = "GiganekoPoint.staminaSeconds"
         static let maxStamina = "GiganekoPoint.maxStamina"
         static let stress = "GiganekoPoint.stress"
         static let like = "GiganekoPoint.like"
@@ -140,6 +146,7 @@ class GiganekoPoint: ObservableObject {
         self.staminaTime = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaTime) as? Double ?? 24.0
         self.staminaHours = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaHours) as? Int ?? 0
         self.staminaMinutes = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaMinutes) as? Int ?? 0
+        self.staminaSeconds = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaSeconds) as? Int ?? 0
         self.maxStamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.maxStamina) as? Double ?? 24.0
         self.stress = UserDefaults.shared.value(forKey: UserDefaultsKeys.stress) as? Int ?? 0
         self.like = UserDefaults.shared.value(forKey: UserDefaultsKeys.like) as? Int ?? 1
@@ -233,9 +240,10 @@ class GiganekoPoint: ObservableObject {
     ///スタミナ削減
     func curtailmentStamina(hours: Double){
         staminaTime = max(0, staminaTime - hours)
-        let totalMinutes = Int(staminaTime * 60) // 時間を分に変換
-        staminaHours = totalMinutes / 60
-        staminaMinutes = totalMinutes % 60
+        let totalSeconds = Int(staminaTime * 3600) // 時間を秒に変換
+        staminaHours = totalSeconds / 3600
+        staminaMinutes = (totalSeconds % 3600) / 60
+        staminaSeconds = totalSeconds % 60 
         stamina = (staminaTime / maxStamina) * 100.0
     }
     
