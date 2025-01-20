@@ -213,7 +213,7 @@ struct HomeView: View {
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text("残り \(giganekoPoint.staminaHours):\(giganekoPoint.staminaMinutes)")
+                                                Text("残り \(giganekoPoint.staminaHours):\(giganekoPoint.staminaMinutes):\(giganekoPoint.staminaSeconds)")
                                                     .foregroundColor(.gray)
                                                     .font(.system(size: 10, weight: .medium))
                                                     .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
