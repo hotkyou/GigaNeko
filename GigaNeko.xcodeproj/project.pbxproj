@@ -20,6 +20,8 @@
 		172FE8902D0181CE00FA3E4C /* DataUsagePrediction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE88E2D0181C700FA3E4C /* DataUsagePrediction.swift */; };
 		172FEADC2D06CDFC00FA3E4C /* Identifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE63B2CF9942200FA3E4C /* Identifier.swift */; };
 		172FEADD2D06CDFC00FA3E4C /* Identifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 172FE63B2CF9942200FA3E4C /* Identifier.swift */; };
+		17AE716E2D3CFB7200961B0A /* GiganekoPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AE716D2D3CFB7200961B0A /* GiganekoPoint.swift */; };
+		17AE716F2D3CFB7200961B0A /* GiganekoPoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17AE716D2D3CFB7200961B0A /* GiganekoPoint.swift */; };
 		4720F2A12CFD76530059D56B /* (null) in Sources */ = {isa = PBXBuildFile; };
 /* End PBXBuildFile section */
 
@@ -71,6 +73,7 @@
 		172FE5D92CF95F6D00FA3E4C /* DataUsageMonitorExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DataUsageMonitorExtension.entitlements; sourceTree = "<group>"; };
 		172FE63B2CF9942200FA3E4C /* Identifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Identifier.swift; sourceTree = "<group>"; };
 		172FE88E2D0181C700FA3E4C /* DataUsagePrediction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataUsagePrediction.swift; sourceTree = "<group>"; };
+		17AE716D2D3CFB7200961B0A /* GiganekoPoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GiganekoPoint.swift; sourceTree = "<group>"; };
 		4773A5532CC0F01300CCD0B2 /* GigaNeko.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GigaNeko.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4773A5632CC0F01600CCD0B2 /* GigaNekoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4773A56D2CC0F01600CCD0B2 /* GigaNekoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = GigaNekoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -168,6 +171,7 @@
 		172FE5CC2CF951B200FA3E4C /* GigaNekoShared */ = {
 			isa = PBXGroup;
 			children = (
+				17AE716D2D3CFB7200961B0A /* GiganekoPoint.swift */,
 				172FE88E2D0181C700FA3E4C /* DataUsagePrediction.swift */,
 				172FE63B2CF9942200FA3E4C /* Identifier.swift */,
 				172FE5D62CF958BB00FA3E4C /* UserDefaultsExtension.swift */,
@@ -392,6 +396,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				17AE716F2D3CFB7200961B0A /* GiganekoPoint.swift in Sources */,
 				172FE88F2D0181CE00FA3E4C /* DataUsagePrediction.swift in Sources */,
 				172FE5CF2CF951FD00FA3E4C /* SystemDataUsage.swift in Sources */,
 				172FE5D12CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */,
@@ -406,6 +411,7 @@
 			files = (
 				172FE5CE2CF951FD00FA3E4C /* SystemDataUsage.swift in Sources */,
 				172FE5D82CF958BD00FA3E4C /* UserDefaultsExtension.swift in Sources */,
+				17AE716E2D3CFB7200961B0A /* GiganekoPoint.swift in Sources */,
 				172FE8902D0181CE00FA3E4C /* DataUsagePrediction.swift in Sources */,
 				172FE5D22CF9523E00FA3E4C /* MobileDataFunc.swift in Sources */,
 				4720F2A12CFD76530059D56B /* (null) in Sources */,
@@ -456,7 +462,7 @@
 				CODE_SIGN_ENTITLEMENTS = DataUsageMonitorExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DataUsageMonitor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DataUsageMonitor;
@@ -467,7 +473,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.itsuki.GigaNeko.DataUsage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotkyou.GigaNeko.DataUsage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -484,7 +490,7 @@
 				CODE_SIGN_ENTITLEMENTS = DataUsageMonitorExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = DataUsageMonitor/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = DataUsageMonitor;
@@ -495,7 +501,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.itsuki.GigaNeko.DataUsage;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotkyou.GigaNeko.DataUsage;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -633,7 +639,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -650,7 +656,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.itsuki.GigaNeko;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotkyou.GigaNeko;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -669,7 +675,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"GigaNeko/Preview Content\"";
-				DEVELOPMENT_TEAM = HB2C2JWPK5;
+				DEVELOPMENT_TEAM = 7XT8DJZM65;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = GigaNeko/Info.plist;
@@ -686,7 +692,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.itsuki.GigaNeko;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotkyou.GigaNeko;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;

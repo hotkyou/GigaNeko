@@ -78,7 +78,11 @@ struct HomeView: View {
     @State private var pettingTimer: Timer?
     @State private var isEditingName = false
     @State private var tempCatName = ""
+    @State private var localStaminaHours: Int = 0
+    @State private var localStaminaMinutes: Int = 0
+    @State private var localStaminaSeconds: Int = 0
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
+    private let staminaTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
     private let dragThreshold: CGFloat = 20.0  // ドラッグ判定の閾値
     let giganekoPoint = GiganekoPoint.shared
@@ -145,13 +149,11 @@ struct HomeView: View {
                     
                     // 上部のステータス表示
                     HStack {
-                        let leftPadding = 30.0
-                        
-                        // ギガ表示のZStack
+                        // Left Section - Giga Display
                         NavigationLink(destination: StatisticsView()) {
                             ZStack {
                                 Rectangle()
-                                    .fill(Color.white)
+                                    .fill(.white)
                                     .frame(width: 80, height: 80)
                                     .opacity(0.7)
                                     .cornerRadius(20)
@@ -163,21 +165,16 @@ struct HomeView: View {
                                         .font(.system(size: 26, weight: .medium))
                                     
                                     ZStack(alignment: .leading) {
-                                        // バーの背景
                                         Rectangle()
                                             .fill(Color.gray.opacity(0.2))
                                             .frame(width: 60, height: 5)
                                             .cornerRadius(2.5)
                                         
-                                        // 使用量のバー
-                                        let progress: CGFloat = if dataNumber > 0 {
-                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0))
-                                        } else {
-                                            0
-                                        }
-
+                                        let progress = dataNumber > 0 ?
+                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
+                                        
                                         Rectangle()
-                                            .fill(Color.orange)
+                                            .fill(.orange)
                                             .frame(width: 60 * progress, height: 5)
                                             .cornerRadius(2.5)
                                     }
@@ -187,103 +184,104 @@ struct HomeView: View {
                                         .font(.system(size: 14))
                                 }
                             }
-                            .padding(.leading, leftPadding)
-                            .padding(.top, 65)
                         }
                         
                         Spacer()
                         
-                        HStack {
+                        VStack {
+                            // Status Display
+                            ZStack {
+                                Rectangle()
+                                    .fill(.white)
+                                    .opacity(0.7)
+                                    .cornerRadius(20)
+                                    .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
+                                    .frame(height: 34)
+                                
+                                HStack(spacing: 15) {
+                                    // Stamina Section
+                                    HStack(spacing: 6) {
+                                        Image("Stamina")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 18, height: 18)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("残 \(localStaminaHours):\(String(format: "%02d", localStaminaMinutes)):\(String(format: "%02d", localStaminaSeconds))")
+                                                .foregroundColor(.gray)
+                                                .font(.system(size: 10, weight: .medium))
+                                                .minimumScaleFactor(0.8)
+                                            
+                                            ProgressView(value: Double(giganekoPoint.stamina) / 100)
+                                                .scaleEffect(x: 1, y: 1.5)
+                                                .tint(.green)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 1, height: 25)
+                                    
+                                    // Stress Section
+                                    HStack(spacing: 6) {
+                                        Image("Stress")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 18, height: 18)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("\(Int(giganekoPoint.stress))%")
+                                                .foregroundColor(.gray)
+                                                .font(.system(size: 12, weight: .medium))
+                                                .minimumScaleFactor(0.8)
+                                            
+                                            ProgressView(value: Double(giganekoPoint.stress) / 100)
+                                                .scaleEffect(x: 1, y: 1.5)
+                                                .tint(.orange)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .padding(.horizontal, 15)
+                            }
+                            
                             Spacer()
-                            VStack(spacing: 20) {
-                                // ステータス表示ZStack
+                                .frame(height: 20)
+                            
+                            // Points Display
+                            HStack {
+                                Spacer()
                                 ZStack {
                                     Rectangle()
-                                        .fill(Color.white)
-                                        .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
-                                        .frame(height: 34)
+                                        .fill(.white)
                                         .opacity(0.7)
-                                        .cornerRadius(20)
+                                        .cornerRadius(15)
+                                        .frame(width: 85, height: 28)
                                     
-                                    HStack(spacing: 15) {
-                                        // スタミナ表示
-                                        HStack(spacing: 8) {
-                                            Image("Stamina")
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fit) // アスペクト比を維持
-                                                .frame(width: 18, height: 18)
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("残り \(giganekoPoint.staminaHours):\(giganekoPoint.staminaMinutes):\(giganekoPoint.staminaSeconds)")
-                                                    .foregroundColor(.gray)
-                                                    .font(.system(size: 10, weight: .medium))
-                                                    .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: Double(giganekoPoint.stamina) / 100)
-                                                    .scaleEffect(x: 1, y: 1.5)
-                                                    .tint(.green)
-                                            }
-                                        }
-                                        .frame(maxWidth: .infinity)
-
-                                        // 区切り線
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.3))
-                                            .frame(width: 1, height: 25)
+                                    HStack(spacing: 4) {
+                                        Image("Point")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 16, height: 16)
                                         
-                                        // ストレス表示
-                                        HStack(spacing: 8) {
-                                            Image("Stress")
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fit) // アスペクト比を維持
-                                                .frame(width: 18, height: 18)
-                                            VStack(alignment: .leading, spacing: 2) {
-                                                Text("\(Int(giganekoPoint.stress))%")
-                                                    .foregroundColor(.gray)
-                                                    .font(.system(size: 12, weight: .medium))
-                                                    .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: Double(giganekoPoint.stress) / 100)
-                                                    .scaleEffect(x: 1, y: 1.5)
-                                                    .tint(.orange)
-                                            }
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                    }
-                                    .padding(.horizontal, 15)
-                                }
-                                
-                                // ボタンとポイント表示
-                                HStack(spacing: 8) { // スペーシングを調整
-                                    Spacer()
-                                    // ポイント表示
-                                    ZStack {
-                                        Rectangle()
-                                            .fill(Color.white)
-                                            .frame(maxWidth: 85) // 最大幅を設定
-                                            .frame(height: 28)
-                                            .opacity(0.7)
-                                            .cornerRadius(15)
+                                        Text("\(giganekoPoint.currentPoints)")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 14, weight: .medium))
+                                            .minimumScaleFactor(0.8)
                                         
-                                        
-                                        HStack(spacing: 4) {
-                                            Image("Point")
-                                                .resizable()
-                                                .aspectRatio(contentMode: .fit) // アスペクト比を維持
-                                                .frame(width: 16, height: 16)
-                                            Text("\(giganekoPoint.currentPoints)")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 14, weight: .medium))
-                                                .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                            Text("pt")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 10))
-                                        }
+                                        Text("pt")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 10))
                                     }
                                 }
-                                .frame(maxWidth: UIScreen.main.bounds.width * 0.7) // 画面幅に応じて最大幅を設定
                             }
+                            .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
                         }
-                        .padding(.trailing, min(leftPadding, UIScreen.main.bounds.width * 0.1)) // 右パディングを画面サイズに応じて制限
-                        .padding(.top, 65)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 30)
+                    .padding(.top, 50)
                     
                     // 中央のキャラクター表示
                     HStack {
@@ -461,7 +459,14 @@ struct HomeView: View {
             }
             .edgesIgnoringSafeArea(.all)
         } // NavigationView
+        .onReceive(staminaTimer) { _ in
+            updateLocalStaminaTime()
+        }
         .onAppear {
+            // 初期値を設定
+            localStaminaHours = giganekoPoint.staminaHours
+            localStaminaMinutes = giganekoPoint.staminaMinutes
+            localStaminaSeconds = giganekoPoint.staminaSeconds
             // アプリ起動時にチュートリアル表示状態を確認
             let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
             if !hasLaunched {
@@ -473,6 +478,30 @@ struct HomeView: View {
             condition()
         }
         .scrollDisabled(true)
+    }
+    
+    // ローカルタイマー更新処理を追加
+    private func updateLocalStaminaTime() {
+        if localStaminaSeconds > 0 {
+            localStaminaSeconds -= 1
+        } else {
+            if localStaminaMinutes > 0 {
+                localStaminaMinutes -= 1
+                localStaminaSeconds = 59
+            } else {
+                if localStaminaHours > 0 {
+                    localStaminaHours -= 1
+                    localStaminaMinutes = 59
+                    localStaminaSeconds = 59
+                }
+            }
+        }
+        
+        // スタミナが0になった場合の処理
+        if localStaminaHours == 0 && localStaminaMinutes == 0 && localStaminaSeconds == 0 {
+            // 必要に応じてここに追加の処理
+            giganekoPoint.stamina = 0
+        }
     }
 }
 

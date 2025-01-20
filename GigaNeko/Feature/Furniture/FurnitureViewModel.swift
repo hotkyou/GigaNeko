@@ -7,14 +7,14 @@ class FurnitureViewModel: ObservableObject {
             name: "招き猫",
             level: 1,
             imageName: "MabekiNeko",
-            effect: "使用量取得ポイント+1%UP",
+            effect: "データ使用時ポイント取得+1%UP",
             pointCost: 3000
         ),
         FurnitureItem(
             name: "キャットタワー",
             level: 1,
             imageName: "CatTower",
-            effect: "撫で度+1%UP",
+            effect: "撫で時好感度+1%UP",
             pointCost: 2500
         ),
         FurnitureItem(
