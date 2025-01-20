@@ -206,7 +206,6 @@ struct HomeView: View {
                                         .cornerRadius(20)
                                     
                                     HStack(spacing: 15) {
-                                        let truncatedStamina = floor(giganekoPoint.stamina)
                                         // スタミナ表示
                                         HStack(spacing: 8) {
                                             Image("Stamina")
@@ -214,11 +213,11 @@ struct HomeView: View {
                                                 .aspectRatio(contentMode: .fit) // アスペクト比を維持
                                                 .frame(width: 18, height: 18)
                                             VStack(alignment: .leading, spacing: 2) {
-                                                Text("\(Int(giganekoPoint.stamina))%")
+                                                Text("残り \(giganekoPoint.staminaHours):\(giganekoPoint.staminaMinutes)")
                                                     .foregroundColor(.gray)
-                                                    .font(.system(size: 12, weight: .medium))
+                                                    .font(.system(size: 10, weight: .medium))
                                                     .minimumScaleFactor(0.8) // テキストが収まらない場合は縮小
-                                                ProgressView(value: giganekoPoint.stamina / 100)
+                                                ProgressView(value: Double(giganekoPoint.stamina) / 100)
                                                     .scaleEffect(x: 1, y: 1.5)
                                                     .tint(.green)
                                             }
