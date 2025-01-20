@@ -18,17 +18,19 @@ struct GigaNekoApp: App {
     }
 }
 
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     // バックグラウンドタスクの識別子
     let refreshTaskIdentifier = "\(Identifier.groupIdentifier).refresh"
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // バックグラウンドタスクの登録
+        // 通知のデリゲート設定を追加
+        UNUserNotificationCenter.current().delegate = self
+        
+        // 既存のバックグラウンドタスクの設定
         BGTaskScheduler.shared.register(forTaskWithIdentifier: refreshTaskIdentifier, using: nil) { task in
             self.handleAppRefresh(task: task as! BGAppRefreshTask)
         }
         
-        // バックグラウンドタスクのスケジュール設定
         scheduleAppRefresh()
         print("アプリ起動")
         return true
@@ -44,6 +46,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } catch {
             print("Failed to schedule app refresh: \(error)")
         }
+    }
+    
+    // フォアグラウンドでの通知表示を許可
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
     }
     
     // タスクが実行された際に呼び出される処理
