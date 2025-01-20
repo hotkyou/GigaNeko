@@ -1,3 +1,4 @@
+//////GiganekoPoint.swift//////////
 import Foundation
 
 class GiganekoPoint: ObservableObject {
@@ -21,12 +22,22 @@ class GiganekoPoint: ObservableObject {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.stamina, value: stamina) }
     }
     ///スタミナ持続時間
-    @Published var staminaTime: Int {
+    @Published var staminaTime: Double {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.staminaTime, value: staminaTime) }
     }
+    
+    //スタミナ時間
+    @Published var staminaHours: Int {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.staminaHours, value: staminaHours) }
+    }
+    
+    //スタミナ分
+    @Published var staminaMinutes: Int {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.staminaMinutes, value: staminaMinutes) }
+    }
     ///一時間あたりのスタミナ
-    @Published var perhourStamina: Double {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.perhourStamina, value: perhourStamina) }
+    @Published var maxStamina: Double {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.maxStamina, value: maxStamina) }
     }
     ///ストレス
     @Published var stress: Int {
@@ -100,7 +111,9 @@ class GiganekoPoint: ObservableObject {
         static let pointsPerGB = "GiganekoPoint.pointsPerGB"
         static let stamina = "GiganekoPoint.stamina"
         static let staminaTime = "GiganekoPoint.staminaTime"
-        static let perhourStamina = "GiganekoPoint.perhourStamina"
+        static let staminaHours = "GiganekoPoint.staminaHours"
+        static let staminaMinutes = "GiganekoPoint.staminaMinutes"
+        static let maxStamina = "GiganekoPoint.maxStamina"
         static let stress = "GiganekoPoint.stress"
         static let like = "GiganekoPoint.like"
         static let likeExperience = "GiganekoPoint.likeExperience"
@@ -123,9 +136,11 @@ class GiganekoPoint: ObservableObject {
         self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 0
         self.addp = UserDefaults.shared.value(forKey: UserDefaultsKeys.addp) as? Double ?? 0.0
         self.pointsPerGB = UserDefaults.shared.value(forKey: UserDefaultsKeys.pointsPerGB) as? Int ?? 0
-        self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 51.0
-        self.staminaTime = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaTime) as? Int ?? 24
-        self.perhourStamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.perhourStamina) as? Double ?? 4.1666666667
+        self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 100.0
+        self.staminaTime = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaTime) as? Double ?? 24.0
+        self.staminaHours = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaHours) as? Int ?? 0
+        self.staminaMinutes = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaMinutes) as? Int ?? 0
+        self.maxStamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.maxStamina) as? Double ?? 24.0
         self.stress = UserDefaults.shared.value(forKey: UserDefaultsKeys.stress) as? Int ?? 0
         self.like = UserDefaults.shared.value(forKey: UserDefaultsKeys.like) as? Int ?? 1
         self.likeExperience = UserDefaults.shared.value(forKey: UserDefaultsKeys.likeExperience) as? Int ?? 0
@@ -210,14 +225,18 @@ class GiganekoPoint: ObservableObject {
         }
         // スタミナ時間と関連プロパティを設定
         let feedTimeValue = Self.feedOptions[feedTime] ?? 24
-        staminaTime = feedTimeValue
+        staminaTime = Double(feedTimeValue)
         stamina = 100
-        perhourStamina = Double(100) / Double(feedTimeValue) // 時間あたりのスタミナ回復計算
+        maxStamina = Double(feedTimeValue)
     }
     
-    ///1時間ずつスタミナ削減
+    ///スタミナ削減
     func curtailmentStamina(hours: Double){
-        stamina = max(0,stamina - (perhourStamina * hours))
+        staminaTime = max(0, staminaTime - hours)
+        let totalMinutes = Int(staminaTime * 60) // 時間を分に変換
+        staminaHours = totalMinutes / 60
+        staminaMinutes = totalMinutes % 60
+        stamina = (staminaTime / maxStamina) * 100.0
     }
     
     ///ストレス追加
