@@ -7,6 +7,8 @@
 		<string>mizuhara.GigaNeko</string>
 		<string>mizuhara.GigaNeko</string>
 	</array>
+	<key>Privacy - Local Notifications Usage Description</key>
+	<string>通知を送信するため使いまっせ</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>
