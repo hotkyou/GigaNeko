@@ -91,7 +91,6 @@ struct HomeView: View {
                         // Left Section - Giga Display
                         NavigationLink(destination: StatisticsView()) {
                             ZStack {
-                                // 元の薄い背景に戻す
                                 Rectangle()
                                     .fill(.white)
                                     .opacity(0.8)
@@ -99,7 +98,7 @@ struct HomeView: View {
                                     .cornerRadius(15)
                                 
                                 VStack(spacing: 4) {
-                                    let (_, wwan) = currentMonthUsage
+                                    let (_, wwan) = getCurrentMonthUsage()
                                     
                                     Text("\(String(format: "%.1f", wwan))")
                                         .foregroundColor(Color.black.opacity(0.5))
@@ -124,7 +123,6 @@ struct HomeView: View {
                                         .foregroundColor(Color.black.opacity(0.5))
                                         .font(.system(size: 12))
                                     
-                                    // ボタンであることを示す微妙な指示を追加
                                     Text("タップで詳細")
                                         .foregroundColor(Color.black.opacity(0.5))
                                         .font(.system(size: 9, weight: .medium))
@@ -144,7 +142,7 @@ struct HomeView: View {
                             ZStack {
                                 Rectangle()
                                     .fill(.white)
-                                    .opacity(0.7)
+                                    .opacity(0.8)
                                     .cornerRadius(20)
                                     .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
                                     .frame(height: 34)
@@ -197,125 +195,6 @@ struct HomeView: View {
                                 .padding(.horizontal, 15)
                             }
                             
-                            HStack {
-                                Spacer()
-                                ZStack {
-                                    Rectangle()
-                                        .fill(.white)
-                                        .opacity(0.7)
-                                        .cornerRadius(15)
-                                        .frame(width: 85, height: 28)
-                                    
-                                    HStack(spacing: 4) {
-                                        Image("Point")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 16, height: 16)
-                                        
-                                        Text("\(giganekoPoint.currentPoints)")
-                                            .foregroundColor(Color.black.opacity(0.5))
-                                            .font(.system(size: 14, weight: .medium))
-                                            .minimumScaleFactor(0.8)
-                                        
-                                        Text("pt")
-                                            .foregroundColor(Color.black.opacity(0.5))
-                                            .font(.system(size: 10))
-                                    }
-                                }
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                                
-                                ZStack {
-                                    Rectangle()
-                                        .fill(Color.white)
-                                        .frame(width: 230, height: 34)
-                                        .opacity(0.7)
-                                        .cornerRadius(20)
-                                    
-                                    ZStack(alignment: .leading) {
-                                        Rectangle()
-                                            .fill(Color.gray.opacity(0.2))
-                                            .frame(width: 60, height: 5)
-                                            .cornerRadius(2.5)
-                                        
-                                        let progress = dataNumber > 0 ?
-                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
-                                        
-                                        Rectangle()
-                                            .fill(.orange)
-                                            .frame(width: 60 * progress, height: 5)
-                                            .cornerRadius(2.5)
-                                    }
-                                    
-                                    Text("\(dataNumber)GB")
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 14))
-                                }
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        VStack {
-                            // Status Display
-                            ZStack {
-                                Rectangle()
-                                    .fill(.white)
-                                    .opacity(0.7)
-                                    .cornerRadius(20)
-                                    .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
-                                    .frame(height: 34)
-                                
-                                HStack(spacing: 15) {
-                                    // Stamina Section
-                                    HStack(spacing: 6) {
-                                        Image("Stamina")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 18, height: 18)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("残 \(localStaminaHours):\(String(format: "%02d", localStaminaMinutes)):\(String(format: "%02d", localStaminaSeconds))")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 10, weight: .medium))
-                                                .minimumScaleFactor(0.8)
-                                            
-                                            ProgressView(value: Double(giganekoPoint.stamina) / 100)
-                                                .scaleEffect(x: 1, y: 1.5)
-                                                .tint(.green)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    
-                                    Rectangle()
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(width: 1, height: 25)
-                                    
-                                    // Stress Section
-                                    HStack(spacing: 6) {
-                                        Image("Stress")
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fit)
-                                            .frame(width: 18, height: 18)
-                                        
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text("\(Int(giganekoPoint.stress))%")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 12, weight: .medium))
-                                                .minimumScaleFactor(0.8)
-                                            
-                                            ProgressView(value: Double(giganekoPoint.stress) / 100)
-                                                .scaleEffect(x: 1, y: 1.5)
-                                                .tint(.orange)
-                                        }
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                }
-                                .padding(.horizontal, 15)
-                            }
-                            
                             Spacer()
                                 .frame(height: 20)
                             
@@ -325,7 +204,7 @@ struct HomeView: View {
                                 ZStack {
                                     Rectangle()
                                         .fill(.white)
-                                        .opacity(0.7)
+                                        .opacity(0.8)
                                         .cornerRadius(15)
                                         .frame(width: 85, height: 28)
                                     
@@ -336,12 +215,12 @@ struct HomeView: View {
                                             .frame(width: 16, height: 16)
                                         
                                         Text("\(giganekoPoint.currentPoints)")
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(Color.black.opacity(0.5))
                                             .font(.system(size: 14, weight: .medium))
                                             .minimumScaleFactor(0.8)
                                         
                                         Text("pt")
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(Color.black.opacity(0.5))
                                             .font(.system(size: 10))
                                     }
                                 }
@@ -440,7 +319,7 @@ struct HomeView: View {
                             ZStack {
                                 Rectangle()
                                     .fill(Color.white)
-                                    .opacity(0.7)
+                                    .opacity(0.8)
                                     .cornerRadius(20)
                                     .frame(height: 30)
                                 
@@ -533,7 +412,6 @@ struct HomeView: View {
             updateLocalStaminaTime()
         }
         .onAppear {
-            currentMonthUsage = getCurrentMonthUsage()
             // 初期値を設定
             localStaminaHours = giganekoPoint.staminaHours
             localStaminaMinutes = giganekoPoint.staminaMinutes
