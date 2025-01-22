@@ -1,18 +1,15 @@
-
-
-
-
-
 import SwiftUI
 
 struct HomeView: View {
+    @StateObject private var tutorialViewModel = TutorialViewModel()
+    @StateObject private var particleSystem = ParticleSystem()
     @State private var offsetY: CGFloat = 0
     @State private var movingDown = true
+    @State private var showWelcomeScreen = false
     @State private var showFirstLaunchOverlay = false
     @State private var showSecondLaunchOverlay = false
     @State private var catName = ""
     @State private var dataNumber: Int = 0
-    @StateObject private var particleSystem = ParticleSystem()
     @State private var pettingStartTime: Date?
     @State private var lastDragLocation: CGPoint?
     @State private var isDragging = false
@@ -24,18 +21,43 @@ struct HomeView: View {
     @State private var localStaminaSeconds: Int = 0
     @State private var currentMonthUsage: (wifi: Double, wwan: Double) = (0, 0)
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
-    
-
+    private let staminaTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
     private let dragThreshold: CGFloat = 20.0  // ドラッグ判定の閾値
+    let giganekoPoint = GiganekoPoint.shared
     
     // 初回起動時の処理を行うための初期化
     init() {
-        let hasLaunched = UserDefaults.standard.bool(forKey: "hasLaunched")
-        _showFirstLaunchOverlay = State(initialValue: !hasLaunched)
-        // 保存された猫の名前を取得
-        let savedName = UserDefaults.standard.string(forKey: "catName") ?? ""
+        // UserDefaultsから初回起動フラグを取得
+        let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
+        let hasCatName = UserDefaults.shared.string(forKey: "catName") != nil
+        
+        // StateObjectの初期化
+        _tutorialViewModel = StateObject(wrappedValue: TutorialViewModel())
+        
+        // 初回起動時の処理
+        if !hasLaunched {
+            // チュートリアルを表示するように設定
+            tutorialViewModel.showTutorial = true
+            _showFirstLaunchOverlay = State(initialValue: false)
+        } else {
+            // 猫の名前が設定されていない場合は名前入力画面を表示
+            _showFirstLaunchOverlay = State(initialValue: !hasCatName)
+        }
+        
+        // その他の初期化
+        let savedName = UserDefaults.shared.string(forKey: "catName") ?? ""
         _catName = State(initialValue: savedName)
+        let savedDataNumber = UserDefaults.shared.integer(forKey: "dataNumber")
+        _dataNumber = State(initialValue: savedDataNumber)
+    }
+    
+    private func condition(){
+        giganekoPoint.checkDate()
+    }
+    
+    private func caress(){
+        giganekoPoint.caressLike()
     }
     
     private func incrementNumber() {
@@ -45,17 +67,12 @@ struct HomeView: View {
     }
     
     private func decrementNumber() {
-        if dataNumber > 1 {
+        if dataNumber > 0 {
             dataNumber = max(1, dataNumber - 1)
         }
     }
 
     // スタミナとストレス値
-    @State private var stamina: Double = 80
-    @State private var stress: Double = 15
-    @State private var staminatimer: Timer?
-    @AppStorage("lastActiveDate") private var lastActiveDate: Date = Date()
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -71,9 +88,7 @@ struct HomeView: View {
                     
                     // 上部のステータス表示
                     HStack {
-                        let leftPadding = 30.0
-                        
-                        // ギガ表示のZStack
+                        // Left Section - Giga Display
                         NavigationLink(destination: StatisticsView()) {
                             ZStack {
                                 // 元の薄い背景に戻す
@@ -219,71 +234,134 @@ struct HomeView: View {
                                         .opacity(0.7)
                                         .cornerRadius(20)
                                     
-                                    HStack {
-                                        Spacer()
-                                        Image("Stamina")
-                                            .resizable()
-                                            .frame(width: 20, height: 20)
-                                            .offset(x: 0, y: 0)
-                                        VStack(alignment: .leading) {
-                                            Text("あと 12:40")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 9))
-                                            ProgressView(value: 0.5)
-                                                .scaleEffect(x: 1, y: 2)
-                                        }
-                                        Spacer()
-                                        Divider()
-                                        Spacer()
-                                        Image("Stress")
-                                            .resizable()
-                                            .frame(width: 20, height: 20)
-                                        VStack(alignment: .leading) {
-                                            Text("ストレス値")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 9))
-                                            ProgressView(value: 0.5)
-                                                .scaleEffect(x: 1, y: 2)
-                                        }
-                                        Spacer()
-                                    }
-                                    .frame(width: 230, height: 34)
-                                }
-                                
-                                // ポイント表示
-                                HStack {
-                                    Spacer()
-                                    ZStack {
+                                    ZStack(alignment: .leading) {
                                         Rectangle()
-                                            .fill(Color.white)
-                                            .frame(width: 80, height: 23)
-                                            .opacity(0.7)
-                                            .cornerRadius(20)
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 60, height: 5)
+                                            .cornerRadius(2.5)
                                         
-                                        HStack {
-                                            Image("Point")
-                                                .resizable()
-                                                .frame(width: 20, height: 20)
-                                            Text("3000pt")
-                                                .foregroundColor(.gray)
-                                                .font(.system(size: 12))
-                                        }
+                                        let progress = dataNumber > 0 ?
+                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
+                                        
+                                        Rectangle()
+                                            .fill(.orange)
+                                            .frame(width: 60 * progress, height: 5)
+                                            .cornerRadius(2.5)
                                     }
+                                    
+                                    Text("\(dataNumber)GB")
+                                        .foregroundColor(.gray)
+                                        .font(.system(size: 14))
                                 }
-                                .frame(width: 230)
                             }
                         }
-                        .padding(.trailing, leftPadding)
-                        .padding(.top, 65)
+                        
+                        Spacer()
+                        
+                        VStack {
+                            // Status Display
+                            ZStack {
+                                Rectangle()
+                                    .fill(.white)
+                                    .opacity(0.7)
+                                    .cornerRadius(20)
+                                    .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
+                                    .frame(height: 34)
+                                
+                                HStack(spacing: 15) {
+                                    // Stamina Section
+                                    HStack(spacing: 6) {
+                                        Image("Stamina")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 18, height: 18)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("残 \(localStaminaHours):\(String(format: "%02d", localStaminaMinutes)):\(String(format: "%02d", localStaminaSeconds))")
+                                                .foregroundColor(.gray)
+                                                .font(.system(size: 10, weight: .medium))
+                                                .minimumScaleFactor(0.8)
+                                            
+                                            ProgressView(value: Double(giganekoPoint.stamina) / 100)
+                                                .scaleEffect(x: 1, y: 1.5)
+                                                .tint(.green)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 1, height: 25)
+                                    
+                                    // Stress Section
+                                    HStack(spacing: 6) {
+                                        Image("Stress")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 18, height: 18)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("\(Int(giganekoPoint.stress))%")
+                                                .foregroundColor(.gray)
+                                                .font(.system(size: 12, weight: .medium))
+                                                .minimumScaleFactor(0.8)
+                                            
+                                            ProgressView(value: Double(giganekoPoint.stress) / 100)
+                                                .scaleEffect(x: 1, y: 1.5)
+                                                .tint(.orange)
+                                        }
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                }
+                                .padding(.horizontal, 15)
+                            }
+                            
+                            Spacer()
+                                .frame(height: 20)
+                            
+                            // Points Display
+                            HStack {
+                                Spacer()
+                                ZStack {
+                                    Rectangle()
+                                        .fill(.white)
+                                        .opacity(0.7)
+                                        .cornerRadius(15)
+                                        .frame(width: 85, height: 28)
+                                    
+                                    HStack(spacing: 4) {
+                                        Image("Point")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 16, height: 16)
+                                        
+                                        Text("\(giganekoPoint.currentPoints)")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 14, weight: .medium))
+                                            .minimumScaleFactor(0.8)
+                                        
+                                        Text("pt")
+                                            .foregroundColor(.gray)
+                                            .font(.system(size: 10))
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, 30)
+                    .padding(.top, 50)
                     
                     // 中央のキャラクター表示
                     HStack {
                         Spacer()
                         VStack {
                             Spacer()
+                            // パーティクル表示用のレイヤー
                             GeometryReader { geometry in
-                                Image("Neko")
+                                let frame = geometry.frame(in: .global)
+                                Image(isDragging ? "NadeNeko" : "Neko")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 300)
@@ -306,9 +384,9 @@ struct HomeView: View {
                                                             
                                                             // 撫で始めたらタイマーを開始
                                                             pettingTimer = Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                                                                particleSystem.createRisingHearts(
-                                                                    in: geometry.frame(in: .global)
-                                                                )
+                                                                particleSystem.createRisingHearts(in: frame)
+                                                                //好感度付与
+                                                                caress()
                                                             }
                                                         }
                                                         lastDragLocation = currentLocation
@@ -352,11 +430,13 @@ struct HomeView: View {
                     }
                     
                     // 下部のレベル表示
-                    VStack {
+                    HStack{
                         Spacer()
-                            .frame(height: UIScreen.main.bounds.height * 0.85)
-                        HStack {
+                        VStack {
                             Spacer()
+                                .frame(height: UIScreen.main.bounds.height * 0.75)
+                            
+                            // レベルと名前表示のZStack
                             ZStack {
                                 Rectangle()
                                     .fill(Color.white)
@@ -391,7 +471,8 @@ struct HomeView: View {
                                     .frame(width: 160)
                                 }
                             }
-                            .frame(width: 150, height: 25)
+                            .frame(width: 180)
+                            
                             Spacer()
                         }
                         Spacer()
@@ -399,167 +480,58 @@ struct HomeView: View {
                 }
                 .edgesIgnoringSafeArea(.all)
                 
-                // 初回起動時のオーバーレイ
+                // チュートリアル画面
+                if tutorialViewModel.showTutorial {
+                    let content = tutorialViewModel.tutorials[tutorialViewModel.currentScreen]
+                    TutorialScreenView_Extended(
+                        content: content,
+                        buttonTitle: tutorialViewModel.isLastScreen ? "始める" : "次へ",
+                        buttonAction: {
+                            if tutorialViewModel.isLastScreen {
+                                // チュートリアル完了時の処理
+                                tutorialViewModel.showTutorial = false
+                                showFirstLaunchOverlay = true
+                            } else {
+                                tutorialViewModel.nextScreen()
+                            }
+                        },
+                        isFirstScreen: tutorialViewModel.isFirstScreen,
+                        onBack: {
+                            tutorialViewModel.previousScreen()
+                        },
+                        currentPage: tutorialViewModel.currentScreen,
+                        totalPages: tutorialViewModel.tutorials.count
+                    )
+                    .transition(.opacity)
+                    .zIndex(2) // チュートリアルを最前面に表示
+                }
+                
+                // 名前入力オーバーレイ
                 if showFirstLaunchOverlay {
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack {
-                        Spacer()
-                            .frame(height: 100) // 上部の固定スペース
-                            
-                        ZStack {
-                            // チュートリアル画像
-                            Image("Tutorial1")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 300)
-                            
-                            // テキストと入力フィールド、ボタンを含むVStack
-                            VStack(spacing: 20) {
-                                // 上部の説明テキスト
-                                VStack(spacing: 10) {
-                                    Text("名前を決めよう")
-                                        .font(.title)
-                                        .bold()
-                                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
-                                        .padding(.top, -30)
-                                }
-                                .padding()
-                                
-                                Spacer()
-                                    .frame(height: 70)
-                                
-                                // 入力フィールドとボタンを縦に並べるVStack
-                                VStack(spacing: 15) {
-                                    // 猫の名前入力フィールド
-                                    TextField("猫の名前を入力", text: $catName)
-                                        .textFieldStyle(RoundedBorderTextFieldStyle())
-                                        .foregroundColor(.black)
-                                        .frame(width: 200)
-                                        .background(Color.white)
-                                        .padding(.horizontal)
-                                    
-                                    // 次へボタン
-                                    Button(action: {
-                                        if !catName.isEmpty {
-                                            withAnimation(.easeOut(duration: 0.3)) {
-                                                showFirstLaunchOverlay = false
-                                                showSecondLaunchOverlay = true
-                                            }
-                                        }
-                                    }) {
-                                        Text("次へ")
-                                            .foregroundColor(.black)
-                                            .frame(width: 200, height: 45)
-                                            .background(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                            .cornerRadius(20)
-                                    }
-                                    .disabled(catName.isEmpty)
-                                }
-                                .padding(.bottom, 30)
-                            }
-                            .frame(width: 300)
-                        }
-                        
-                        Spacer()
+                    TutorialOverlay {
+                        NameInputView(
+                            catName: $catName,
+                            showFirstLaunchOverlay: $showFirstLaunchOverlay,
+                            showSecondLaunchOverlay: $showSecondLaunchOverlay,
+                            isEditingName: $isEditingName
+                        )
                     }
-                    .ignoresSafeArea(.keyboard) // キーボードを無視
-                    .transition(.scale.combined(with: .opacity))
+                    .ignoresSafeArea(.keyboard)
                 } else if showSecondLaunchOverlay {
-                    Color.black.opacity(0.4)
-                        .edgesIgnoringSafeArea(.all)
-                    
-                    VStack {
-                        Spacer()
-                            .frame(height: 100) // 上部の固定スペース
-                            
-                        ZStack {
-                            // チュートリアル画像
-                            Image("Tutorial2")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 300)
-                            
-                            // テキストと入力フィールド、ボタンを含むVStack
-                            VStack(spacing: 20) {
-                                // 上部の説明テキスト
-                                VStack(spacing: 10) {
-                                    Text("通信量を決めよう")
-                                        .font(.title)
-                                        .bold()
-                                        .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
-                                }
-                                .padding()
-                                
-                                // 入力フィールドとボタンを縦に並べるVStack
-                                VStack(spacing: 0) {
-                                    // 選択された数値の大きな表示
-                                    HStack(spacing: 0) {
-                                        // マイナスボタン
-                                        Button(action: decrementNumber) {
-                                            Image(systemName: "minus.circle.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                        }
-                                        .padding(.leading, 20)
-                                        
-                                        Spacer()
-                                            .frame(minWidth: 10)
-                                        
-                                        // 現在の値の表示
-                                        Text("\(dataNumber)")
-                                            .font(.system(size: 70, weight: .bold))
-                                            .frame(minWidth: 150)
-                                            .multilineTextAlignment(.center)
-                                        
-                                        Spacer()
-                                            .frame(minWidth: 10)
-                                        
-                                        // プラスボタン
-                                        Button(action: incrementNumber) {
-                                            Image(systemName: "plus.circle.fill")
-                                                .font(.system(size: 24))
-                                                .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                        }
-                                        .padding(.trailing, 20)
-                                    }
-                                    .frame(width: 200, height: 80)
-                                    
-                                    Spacer()
-                                        .frame(height: 60)
-                                    
-                                    // 設定ボタン
-                                    Button(action: {
-                                        if dataNumber > 0 && dataNumber <= 200 {
-                                            UserDefaults.standard.set(catName, forKey: "catName")
-                                            UserDefaults.standard.set(dataNumber, forKey: "dataNumber")
-                                            UserDefaults.standard.set(true, forKey: "hasLaunched")
-                                            withAnimation(.easeOut(duration: 0.3)) {
-                                                showSecondLaunchOverlay = false
-                                            }
-                                        }
-                                    }) {
-                                        Text("設定")
-                                            .foregroundColor(.black)
-                                            .frame(width: 200, height: 45)
-                                            .background(Color(red: 232/255, green: 201/255, blue: 160/255))
-                                            .cornerRadius(20)
-                                    }
-                                    .disabled(dataNumber <= 0 || dataNumber > 200)
-                                }
-                                .padding(.bottom, 30)
-                            }
-                            .frame(width: 300)
-                        }
-                        
-                        Spacer()
+                    TutorialOverlay {
+                        DataInputView(
+                            dataNumber: $dataNumber,
+                            showSecondLaunchOverlay: $showSecondLaunchOverlay,
+                            catName: $catName
+                        )
                     }
-                    .transition(.scale.combined(with: .opacity))
                 }
             }
             .edgesIgnoringSafeArea(.all)
         } // NavigationView
+        .onReceive(staminaTimer) { _ in
+            updateLocalStaminaTime()
+        }
         .onAppear {
             currentMonthUsage = getCurrentMonthUsage()
             // 初期値を設定
@@ -574,49 +546,33 @@ struct HomeView: View {
             condition()
         }
         .onDisappear {
-            saveLastActiveDate()
+            condition()
         }
         .scrollDisabled(true)
     }
-    // Timerを開始
-    private func startTimer() {
-        // 3分ごとにスタミナが減っていく処理
-        staminatimer = Timer.scheduledTimer(withTimeInterval: 180, repeats: true) { _ in
-            withAnimation {
-                if stamina > 0 {
-                    stamina -= 1
+    
+    // ローカルタイマー更新処理を追加
+    private func updateLocalStaminaTime() {
+        if localStaminaSeconds > 0 {
+            localStaminaSeconds -= 1
+        } else {
+            if localStaminaMinutes > 0 {
+                localStaminaMinutes -= 1
+                localStaminaSeconds = 59
+            } else {
+                if localStaminaHours > 0 {
+                    localStaminaHours -= 1
+                    localStaminaMinutes = 59
+                    localStaminaSeconds = 59
                 }
             }
         }
-    }
-    // バックグラウンド復帰時にスタミナとストレスを更新
-    private func updateValuesFromBackground() {
-        let currentDate = Date()
-        let elapsedTime = currentDate.timeIntervalSince(lastActiveDate) // 経過時間 (秒)
         
-        // スタミナの減少: 3分ごとに1減少
-        let staminaToReduce = Int(elapsedTime / 180)
-        if staminaToReduce > 0 {
-            stamina = max(0, stamina - Double(staminaToReduce)) // スタミナが0未満にならないように
+        // スタミナが0になった場合の処理
+        if localStaminaHours == 0 && localStaminaMinutes == 0 && localStaminaSeconds == 0 {
+            // 必要に応じてここに追加の処理
+            giganekoPoint.stamina = 0
         }
-        
-        // ストレスの増加: 5分ごとに1増加
-        let stressToIncrease = Int(elapsedTime / 300)
-        if stressToIncrease > 0 {
-            stress = min(100, stress + Double(stressToIncrease)) // ストレスが100を超えないように
-        }
-        
-        // タイムスタンプを現在時刻に更新
-        lastActiveDate = currentDate
-    }
-    
-    // アプリが閉じられる際にタイムスタンプを保存
-    private func saveLastActiveDate() {
-        lastActiveDate = Date()
-    }
-    // スタミナ回復処理
-    private func recoverStamina() {
-        stamina = min(100, stamina + 20) // スタミナを最大100まで回復
     }
 }
 

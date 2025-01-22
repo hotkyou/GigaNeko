@@ -1,12 +1,11 @@
 import SwiftUI
-//import Firebase
+import ActivityKit
+import WidgetKit
 import BackgroundTasks
 
 @main
 struct GigaNekoApp: App {
-    // Firebaseの初期化
     init() {
-        //FirebaseApp.configure()
         saveDataUsage()
     }
     
@@ -14,14 +13,14 @@ struct GigaNekoApp: App {
     
     var body: some Scene {
         WindowGroup {
-            MainTabView()
+            LaunchScreenView()
         }
     }
 }
 
 class AppDelegate: UIResponder, UIApplicationDelegate {
     // バックグラウンドタスクの識別子
-    let refreshTaskIdentifier = "Iccyan21.GigaNeko.refresh"
+    let refreshTaskIdentifier = "\(Identifier.groupIdentifier).refresh"
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // バックグラウンドタスクの登録
