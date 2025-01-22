@@ -1,67 +1,5 @@
 import SwiftUI
 
-// パーティクル1つの情報を保持する構造体
-struct HeartParticle: Identifiable {
-    let id = UUID()
-    var position: CGPoint
-    var scale: CGFloat
-    var opacity: Double
-    var rotation: Double
-    var offset: CGSize
-}
-
-class ParticleSystem: ObservableObject {
-    @Published var particles: [HeartParticle] = []
-    private var lastParticleTime: Date = Date()
-    private let particleInterval: TimeInterval = 1.0  // パーティクル生成間隔
-    
-    func createRisingHearts(in frame: CGRect) {
-        let now = Date()
-        if now.timeIntervalSince(lastParticleTime) >= particleInterval {
-            let baseX = frame.midX
-            let baseY = frame.midY - 50
-            
-            // 3つのハートを生成（左、中央、右）
-            let positions = [
-                CGPoint(x: baseX - 25, y: baseY),
-                CGPoint(x: baseX, y: baseY - 10),
-                CGPoint(x: baseX + 25, y: baseY)
-            ]
-            
-            for position in positions {
-                let particle = HeartParticle(
-                    position: position,
-                    scale: CGFloat.random(in: 1.5...2.0),  // 大きめのサイズ
-                    opacity: 1,
-                    rotation: 0,  // 回転なし
-                    offset: .zero
-                )
-                particles.append(particle)
-            }
-            
-            lastParticleTime = now
-            
-            // シンプルな上昇アニメーション
-            withAnimation(.easeOut(duration: 5.0)) {  // アニメーション時間2秒
-                for i in particles.indices.suffix(3) {
-                    particles[i].offset = CGSize(
-                        width: 0,        // 横移動なし
-                        height: -400     // まっすぐ上に移動
-                    )
-                    particles[i].opacity = 0  // フェードアウト
-                }
-            }
-            
-            // アニメーション後にパーティクルを削除
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                self.particles.removeAll { particle in
-                    particle.opacity == 0
-                }
-            }
-        }
-    }
-}
-
 struct HomeView: View {
     @StateObject private var tutorialViewModel = TutorialViewModel()
     @StateObject private var particleSystem = ParticleSystem()
@@ -205,36 +143,46 @@ struct HomeView: View {
                             ZStack {
                                 Rectangle()
                                     .fill(.white)
-                                    .frame(width: 80, height: 80)
-                                    .opacity(0.7)
-                                    .cornerRadius(20)
+                                    .opacity(0.8)
+                                    .frame(width: 85, height: 85)
+                                    .cornerRadius(15)
                                 
-                                let (_, wwan) = getCurrentMonthUsage()
-                                VStack(spacing: 6) {
+                                VStack(spacing: 4) {
+                                    let (_, wwan) = getCurrentMonthUsage()
+                                    
                                     Text("\(String(format: "%.1f", wwan))")
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 26, weight: .medium))
+                                        .foregroundColor(Color.black.opacity(0.5))
+                                        .font(.system(size: 22, weight: .medium))
                                     
                                     ZStack(alignment: .leading) {
                                         Rectangle()
                                             .fill(Color.gray.opacity(0.2))
-                                            .frame(width: 60, height: 5)
-                                            .cornerRadius(2.5)
+                                            .frame(width: 60, height: 4)
+                                            .cornerRadius(2)
                                         
                                         let progress = dataNumber > 0 ?
                                             CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
                                         
                                         Rectangle()
                                             .fill(.orange)
-                                            .frame(width: 60 * progress, height: 5)
-                                            .cornerRadius(2.5)
+                                            .frame(width: 60 * progress, height: 4)
+                                            .cornerRadius(2)
                                     }
                                     
                                     Text("\(dataNumber)GB")
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 14))
+                                        .foregroundColor(Color.black.opacity(0.5))
+                                        .font(.system(size: 12))
+                                    
+                                    Text("タップで詳細")
+                                        .foregroundColor(Color.black.opacity(0.5))
+                                        .font(.system(size: 9, weight: .medium))
+                                        .padding(.top, 2)
                                 }
                             }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
                         }
                         
                         Spacer()
@@ -244,7 +192,7 @@ struct HomeView: View {
                             ZStack {
                                 Rectangle()
                                     .fill(.white)
-                                    .opacity(0.7)
+                                    .opacity(0.8)
                                     .cornerRadius(20)
                                     .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
                                     .frame(height: 34)
@@ -258,8 +206,8 @@ struct HomeView: View {
                                             .frame(width: 18, height: 18)
                                         
                                         VStack(alignment: .leading, spacing: 2) {
-                                            Text("残 \(localStaminaHours):\(String(format: "%02d", localStaminaMinutes)):\(String(format: "%02d", localStaminaSeconds))")
-                                                .foregroundColor(.gray)
+                                            Text("残\(localStaminaHours):\(String(format: "%02d", localStaminaMinutes)):\(String(format: "%02d", localStaminaSeconds))")
+                                                .foregroundColor(Color.black.opacity(0.5))
                                                 .font(.system(size: 10, weight: .medium))
                                                 .minimumScaleFactor(0.8)
                                             
@@ -283,7 +231,7 @@ struct HomeView: View {
                                         
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text("\(Int(giganekoPoint.stress))%")
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(Color.black.opacity(0.5))
                                                 .font(.system(size: 12, weight: .medium))
                                                 .minimumScaleFactor(0.8)
                                             
@@ -306,7 +254,7 @@ struct HomeView: View {
                                 ZStack {
                                     Rectangle()
                                         .fill(.white)
-                                        .opacity(0.7)
+                                        .opacity(0.8)
                                         .cornerRadius(15)
                                         .frame(width: 85, height: 28)
                                     
@@ -317,12 +265,12 @@ struct HomeView: View {
                                             .frame(width: 16, height: 16)
                                         
                                         Text("\(giganekoPoint.currentPoints)")
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(Color.black.opacity(0.5))
                                             .font(.system(size: 14, weight: .medium))
                                             .minimumScaleFactor(0.8)
                                         
                                         Text("pt")
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(Color.black.opacity(0.5))
                                             .font(.system(size: 10))
                                     }
                                 }
@@ -421,7 +369,7 @@ struct HomeView: View {
                             ZStack {
                                 Rectangle()
                                     .fill(Color.white)
-                                    .opacity(0.7)
+                                    .opacity(0.8)
                                     .cornerRadius(20)
                                     .frame(height: 30)
                                 
@@ -433,7 +381,7 @@ struct HomeView: View {
                                 }) {
                                     HStack(spacing: 12) {
                                         Text("Lv \(giganekoPoint.like)")
-                                            .foregroundColor(.gray)
+                                            .foregroundColor(Color.black.opacity(0.5))
                                             .font(.system(size: 14))
                                         
                                         Rectangle()
@@ -442,7 +390,7 @@ struct HomeView: View {
                                         
                                         HStack(spacing: 4) {
                                             Text(catName)
-                                                .foregroundColor(.gray)
+                                                .foregroundColor(Color.black.opacity(0.5))
                                                 .font(.system(size: 14))
                                             Image(systemName: "pencil.circle.fill")
                                                 .foregroundColor(.orange.opacity(0.8))
@@ -676,10 +624,15 @@ struct DataInputView: View {
                 .scaledToFit()
                 .frame(width: 300)
             
-            VStack(spacing: 20) {
+            VStack(spacing: 0) {
+                Spacer()
+                    .frame(height: 20)
                 TutorialHeader(title: "通信量を決めよう")
                 
                 VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: 40)
+                    
                     DataNumberSelector(dataNumber: $dataNumber)
                     
                     Spacer()
@@ -763,25 +716,19 @@ struct DataNumberSelector: View {
         HStack(spacing: 0) {
             Button(action: decrementNumber) {
                 Image(systemName: "minus.circle.fill")
-                    .font(.system(size: 24))
+                    .font(.system(size: 30))
                     .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
             }
             .padding(.leading, 20)
-            
-            Spacer()
-                .frame(minWidth: 10)
             
             Text("\(dataNumber)")
                 .font(.system(size: 70, weight: .bold))
                 .frame(minWidth: 150)
                 .multilineTextAlignment(.center)
             
-            Spacer()
-                .frame(minWidth: 10)
-            
             Button(action: incrementNumber) {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 24))
+                    .font(.system(size: 30))
                     .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
             }
             .padding(.trailing, 20)

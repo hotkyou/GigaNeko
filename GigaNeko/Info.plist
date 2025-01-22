@@ -4,8 +4,8 @@
 <dict>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>mizuhara.GigaNeko</string>
-		<string>mizuhara.GigaNeko</string>
+		<string>group.hotkyou.GigaNeko.refresh</string>
+		<string>group.hotkyou.GigaNeko.process</string>
 	</array>
 	<key>Privacy - Local Notifications Usage Description</key>
 	<string>通知を送信するため使いまっせ</string>

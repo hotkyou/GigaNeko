@@ -21,34 +21,46 @@ class TutorialViewModel: ObservableObject {
     
     let tutorials: [TutorialContent] = [
         TutorialContent(
-            title: "ようこそ！",
+            title: "ようこそ",
             imageName: "Neko",
-            mainText: "インストールありがとうございます！",
-            subText: "このアプリの説明を始めていくよ"
+            mainText: "インストールありがとにゃ！",
+            subText: "このアプリの説明を始めていくにゃん"
         ),
         TutorialContent(
-            title: "猫のお世話",
-            imageName: "NekoCare",
-            mainText: "猫との暮らし方",
-            subText: "スタミナとストレス値に注意して\n毎日お世話をしてあげましょう"
-        ),
-        TutorialContent(
-            title: "データ管理",
-            imageName: "NekoData",
-            mainText: "通信量を確認",
-            subText: "毎日の通信量を可視化して\n確認することができます"
+            title: "ギガ猫とは",
+            imageName: "NadeNeko",
+            mainText: "通信量でねこと暮らそう！",
+            subText: "毎日のデータ通信で\nかわいいねこと暮らせるにゃ"
         ),
         TutorialContent(
             title: "ポイント",
-            imageName: "NekoPoint",
-            mainText: "ポイントを貯めよう",
-            subText: "データ通信を節約すると\nポイントが貯まります"
+            imageName: "TutorialPoint",
+            mainText: "まずはポイントを貯めるにゃ",
+            subText: "ポイントはねこと暮らすのに必要にゃ\nショップでえさを買うと\nポイントがもらえるにゃん"
+        ),
+        TutorialContent(
+            title: "えさ",
+            imageName: "TutorialEsa",
+            mainText: "えさをあげることが大切にゃん",
+            subText: "えさがなくなると\nポイントがもらえなくなり\nストレスもたまってしまうにゃ"
+        ),
+        TutorialContent(
+            title: "ストレス",
+            imageName: "TutorialStress",
+            mainText: "ストレス管理も忘れずに！",
+            subText: "ストレスがたまると\nねこが逃げちゃうにゃ\nストレスはおもちゃを買うと下がるにゃ"
+        ),
+        TutorialContent(
+            title: "データ管理",
+            imageName: "TutorialGiga",
+            mainText: "毎日の通信量を見てみよう！",
+            subText: "データ通信量をグラフで\n分かりやすく確認できるにゃ"
         ),
         TutorialContent(
             title: "準備完了！",
-            imageName: "NekoReady",
+            imageName: "MabekiNeko",
             mainText: "さあ、始めましょう！",
-            subText: "猫と一緒に楽しく\n通信量を管理していきましょう"
+            subText: "ねこと一緒に楽しく\n通信量を管理していきましょう"
         )
     ]
     
@@ -185,9 +197,11 @@ struct TutorialScreenView_Extended: View {
                     .frame(width: 180)
                     .shadow(color: .gray.opacity(0.5), radius: 5, x: 0, y: 3)
                 
-                Text(content.mainText)
-                    .font(.system(size: 18, weight: .semibold, design: .rounded))
-                    .foregroundColor(.gray)
+                if !content.mainText.isEmpty {
+                    Text(content.mainText)
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundColor(.gray)
+                }
                 
                 Text(content.subText)
                     .font(.system(size: 16, weight: .regular, design: .rounded))
@@ -195,6 +209,8 @@ struct TutorialScreenView_Extended: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 10)
                     .lineSpacing(4)
+                    // mainTextが空の場合、上部の余白を調整
+                    .padding(.top, content.mainText.isEmpty ? 10 : 0)
             }
             .padding(.vertical)
         }
