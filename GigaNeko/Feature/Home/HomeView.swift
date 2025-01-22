@@ -5,68 +5,6 @@
 
 import SwiftUI
 
-// パーティクル1つの情報を保持する構造体
-struct HeartParticle: Identifiable {
-    let id = UUID()
-    var position: CGPoint
-    var scale: CGFloat
-    var opacity: Double
-    var rotation: Double
-    var offset: CGSize
-}
-
-class ParticleSystem: ObservableObject {
-    @Published var particles: [HeartParticle] = []
-    private var lastParticleTime: Date = Date()
-    private let particleInterval: TimeInterval = 1.0  // パーティクル生成間隔
-    
-    func createRisingHearts(in frame: CGRect) {
-        let now = Date()
-        if now.timeIntervalSince(lastParticleTime) >= particleInterval {
-            let baseX = frame.midX
-            let baseY = frame.midY - 50
-            
-            // 3つのハートを生成（左、中央、右）
-            let positions = [
-                CGPoint(x: baseX - 25, y: baseY),
-                CGPoint(x: baseX, y: baseY - 10),
-                CGPoint(x: baseX + 25, y: baseY)
-            ]
-            
-            for position in positions {
-                let particle = HeartParticle(
-                    position: position,
-                    scale: CGFloat.random(in: 1.5...2.0),  // 大きめのサイズ
-                    opacity: 1,
-                    rotation: 0,  // 回転なし
-                    offset: .zero
-                )
-                particles.append(particle)
-            }
-            
-            lastParticleTime = now
-            
-            // シンプルな上昇アニメーション
-            withAnimation(.easeOut(duration: 5.0)) {  // アニメーション時間2秒
-                for i in particles.indices.suffix(3) {
-                    particles[i].offset = CGSize(
-                        width: 0,        // 横移動なし
-                        height: -400     // まっすぐ上に移動
-                    )
-                    particles[i].opacity = 0  // フェードアウト
-                }
-            }
-            
-            // アニメーション後にパーティクルを削除
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                self.particles.removeAll { particle in
-                    particle.opacity == 0
-                }
-            }
-        }
-    }
-}
-
 struct HomeView: View {
     @State private var offsetY: CGFloat = 0
     @State private var movingDown = true
@@ -79,6 +17,12 @@ struct HomeView: View {
     @State private var lastDragLocation: CGPoint?
     @State private var isDragging = false
     @State private var pettingTimer: Timer?
+    @State private var isEditingName = false
+    @State private var tempCatName = ""
+    @State private var localStaminaHours: Int = 0
+    @State private var localStaminaMinutes: Int = 0
+    @State private var localStaminaSeconds: Int = 0
+    @State private var currentMonthUsage: (wifi: Double, wwan: Double) = (0, 0)
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     
 
@@ -132,58 +76,135 @@ struct HomeView: View {
                         // ギガ表示のZStack
                         NavigationLink(destination: StatisticsView()) {
                             ZStack {
+                                // 元の薄い背景に戻す
                                 Rectangle()
-                                    .fill(Color.white)
-                                    .frame(width: 80, height: 80)
+                                    .fill(.white)
+                                    .opacity(0.8)
+                                    .frame(width: 85, height: 85)
+                                    .cornerRadius(15)
+                                
+                                VStack(spacing: 4) {
+                                    let (_, wwan) = currentMonthUsage
+                                    
+                                    Text("\(String(format: "%.1f", wwan))")
+                                        .foregroundColor(Color.black.opacity(0.5))
+                                        .font(.system(size: 22, weight: .medium))
+                                    
+                                    ZStack(alignment: .leading) {
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.2))
+                                            .frame(width: 60, height: 4)
+                                            .cornerRadius(2)
+                                        
+                                        let progress = dataNumber > 0 ?
+                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
+                                        
+                                        Rectangle()
+                                            .fill(.orange)
+                                            .frame(width: 60 * progress, height: 4)
+                                            .cornerRadius(2)
+                                    }
+                                    
+                                    Text("\(dataNumber)GB")
+                                        .foregroundColor(Color.black.opacity(0.5))
+                                        .font(.system(size: 12))
+                                    
+                                    // ボタンであることを示す微妙な指示を追加
+                                    Text("タップで詳細")
+                                        .foregroundColor(Color.black.opacity(0.5))
+                                        .font(.system(size: 9, weight: .medium))
+                                        .padding(.top, 2)
+                                }
+                            }
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 15)
+                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        
+                        Spacer()
+                        
+                        VStack {
+                            // Status Display
+                            ZStack {
+                                Rectangle()
+                                    .fill(.white)
                                     .opacity(0.7)
                                     .cornerRadius(20)
+                                    .frame(maxWidth: UIScreen.main.bounds.width * 0.7)
+                                    .frame(height: 34)
                                 
-                                HStack {
-                                    // 小数点切り捨て
-                                    let truncatedStamina = floor(stamina)
-                                    Spacer()
-                                    Image("Stamina")
-                                        .resizable()
-                                        .frame(width: 20, height: 20)
-                                        .offset(x: 0, y: 0)
-                                    VStack(alignment: .leading) {
-                                        Text("スタミナ値: \(Int(truncatedStamina))")
-                                            .foregroundColor(.gray)
-                                            .font(.system(size: 9))
-                                        ProgressView(value: stamina / 100) // 0.0〜1.0に変換
-                                            .scaleEffect(x: 1, y: 2) // 高さを増やす
+                                HStack(spacing: 15) {
+                                    // Stamina Section
+                                    HStack(spacing: 6) {
+                                        Image("Stamina")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 18, height: 18)
                                         
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("残\(localStaminaHours):\(String(format: "%02d", localStaminaMinutes)):\(String(format: "%02d", localStaminaSeconds))")
+                                                .foregroundColor(Color.black.opacity(0.5))
+                                                .font(.system(size: 10, weight: .medium))
+                                                .minimumScaleFactor(0.8)
+                                            
+                                            ProgressView(value: Double(giganekoPoint.stamina) / 100)
+                                                .scaleEffect(x: 1, y: 1.5)
+                                                .tint(.green)
+                                        }
                                     }
-                                    Spacer()
-                                    Divider()
-                                    Spacer()
-                                    HStack {
-                                        Spacer()
-                                        Text("GB")
-                                            .foregroundColor(.gray)
-                                            .font(.system(size: 9))
-                                        ProgressView(value: stress / 100) // 0.0〜1.0に変換
-                                            .scaleEffect(x: 1, y: 2)
+                                    .frame(maxWidth: .infinity)
+                                    
+                                    Rectangle()
+                                        .fill(Color.gray.opacity(0.3))
+                                        .frame(width: 1, height: 25)
+                                    
+                                    // Stress Section
+                                    HStack(spacing: 6) {
+                                        Image("Stress")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 18, height: 18)
                                         
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("\(Int(giganekoPoint.stress))%")
+                                                .foregroundColor(Color.black.opacity(0.5))
+                                                .font(.system(size: 12, weight: .medium))
+                                                .minimumScaleFactor(0.8)
+                                            
+                                            ProgressView(value: Double(giganekoPoint.stress) / 100)
+                                                .scaleEffect(x: 1, y: 1.5)
+                                                .tint(.orange)
+                                        }
                                     }
+                                    .frame(maxWidth: .infinity)
                                 }
-                                .frame(width: 80, height: 80)
+                                .padding(.horizontal, 15)
                             }
                             
                             HStack {
                                 Spacer()
-                                Button("飯") {
-                                    recoverStamina()
-                                }
-                                .padding()
-                                .background(Color.green)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                                
-                                Button("遊") {
-                                    if stamina > 0 {
-                                        stamina -= 10
-                                        stress = max(0, stress - 5) // 遊ぶとストレスが減る
+                                ZStack {
+                                    Rectangle()
+                                        .fill(.white)
+                                        .opacity(0.7)
+                                        .cornerRadius(15)
+                                        .frame(width: 85, height: 28)
+                                    
+                                    HStack(spacing: 4) {
+                                        Image("Point")
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fit)
+                                            .frame(width: 16, height: 16)
+                                        
+                                        Text("\(giganekoPoint.currentPoints)")
+                                            .foregroundColor(Color.black.opacity(0.5))
+                                            .font(.system(size: 14, weight: .medium))
+                                            .minimumScaleFactor(0.8)
+                                        
+                                        Text("pt")
+                                            .foregroundColor(Color.black.opacity(0.5))
+                                            .font(.system(size: 10))
                                     }
                                 }
                                 .padding()
@@ -341,15 +362,33 @@ struct HomeView: View {
                                     .fill(Color.white)
                                     .opacity(0.7)
                                     .cornerRadius(20)
-                                HStack {
-                                    Text("Lv100")
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 12))
-                                    Divider()
-                                        .frame(height: 15)
-                                    Text(catName)  // ここを変更
-                                        .foregroundColor(.gray)
-                                        .font(.system(size: 12))
+                                    .frame(height: 30)
+                                
+                                Button(action: {
+                                    // 名前変更用のオーバーレイを表示
+                                    tempCatName = catName  // 現在の名前を一時保存
+                                    showFirstLaunchOverlay = true
+                                    isEditingName = true
+                                }) {
+                                    HStack(spacing: 12) {
+                                        Text("Lv \(giganekoPoint.like)")
+                                            .foregroundColor(Color.black.opacity(0.5))
+                                            .font(.system(size: 14))
+                                        
+                                        Rectangle()
+                                            .fill(Color.gray.opacity(0.3))
+                                            .frame(width: 1, height: 15)
+                                        
+                                        HStack(spacing: 4) {
+                                            Text(catName)
+                                                .foregroundColor(Color.black.opacity(0.5))
+                                                .font(.system(size: 14))
+                                            Image(systemName: "pencil.circle.fill")
+                                                .foregroundColor(.orange.opacity(0.8))
+                                                .font(.system(size: 14))
+                                        }
+                                    }
+                                    .frame(width: 160)
                                 }
                             }
                             .frame(width: 150, height: 25)
@@ -522,8 +561,17 @@ struct HomeView: View {
             .edgesIgnoringSafeArea(.all)
         } // NavigationView
         .onAppear {
-            startTimer()
-            updateValuesFromBackground()
+            currentMonthUsage = getCurrentMonthUsage()
+            // 初期値を設定
+            localStaminaHours = giganekoPoint.staminaHours
+            localStaminaMinutes = giganekoPoint.staminaMinutes
+            localStaminaSeconds = giganekoPoint.staminaSeconds
+            // アプリ起動時にチュートリアル表示状態を確認
+            let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
+            if !hasLaunched {
+                tutorialViewModel.showTutorial = true
+            }
+            condition()
         }
         .onDisappear {
             saveLastActiveDate()
@@ -575,5 +623,230 @@ struct HomeView: View {
 struct HomeView_Previews: PreviewProvider {
     static var previews: some View {
         HomeView()
+    }
+}
+
+// チュートリアルの各ステップを定義
+enum TutorialStep {
+    case nameInput
+    case dataInput
+}
+
+// 共通のオーバーレイコンポーネント
+struct TutorialOverlay<Content: View>: View {
+    let content: Content
+    
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+    
+    var body: some View {
+        Color.black.opacity(0.4)
+            .edgesIgnoringSafeArea(.all)
+        
+        VStack {
+            Spacer()
+            
+            ZStack {
+                content
+            }
+            
+            Spacer()
+        }
+        .transition(.scale.combined(with: .opacity))
+    }
+}
+
+// 名前入力画面コンポーネント
+struct NameInputView: View {
+    @Binding var catName: String
+    @Binding var showFirstLaunchOverlay: Bool
+    @Binding var showSecondLaunchOverlay: Bool
+    @Binding var isEditingName: Bool
+    @State private var tempCatName: String = ""
+    
+    var body: some View {
+        ZStack {
+            Image("Tutorial1")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 300)
+            
+            VStack(spacing: 20) {
+                TutorialHeader(title: isEditingName ? "名前を変更" : "名前を決めよう")
+                
+                Spacer()
+                    .frame(height: 70)
+                
+                VStack(spacing: 15) {
+                    TextField("猫の名前を入力", text: $catName)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .foregroundColor(.black)
+                        .frame(width: 200)
+                        .background(Color.white)
+                        .padding(.horizontal)
+                    
+                    HStack(spacing: 10) {
+                        if isEditingName {
+                            TutorialButton(
+                                title: "キャンセル",
+                                width: 95,
+                                action: {
+                                    catName = tempCatName
+                                    showFirstLaunchOverlay = false
+                                    isEditingName = false
+                                }
+                            )
+                        }
+                        
+                        TutorialButton(
+                            title: isEditingName ? "決定" : "次へ",
+                            width: isEditingName ? 95 : 200,
+                            action: {
+                                if !catName.isEmpty {
+                                    UserDefaults.shared.set(catName, forKey: "catName")
+                                    if isEditingName {
+                                        showFirstLaunchOverlay = false
+                                        isEditingName = false
+                                    } else {
+                                        showSecondLaunchOverlay = true
+                                        showFirstLaunchOverlay = false
+                                    }
+                                }
+                            },
+                            isDisabled: catName.isEmpty
+                        )
+                    }
+                }
+                .padding(.bottom, 30)
+            }
+            .frame(width: 300)
+        }
+    }
+}
+
+// データ入力画面コンポーネント
+struct DataInputView: View {
+    @Binding var dataNumber: Int
+    @Binding var showSecondLaunchOverlay: Bool
+    @Binding var catName: String
+    
+    var body: some View {
+        ZStack {
+            Image("Tutorial2")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 300)
+            
+            VStack(spacing: 0) {
+                Spacer()
+                    .frame(height: 20)
+                TutorialHeader(title: "通信量を決めよう")
+                
+                VStack(spacing: 0) {
+                    Spacer()
+                        .frame(height: 40)
+                    
+                    DataNumberSelector(dataNumber: $dataNumber)
+                    
+                    Spacer()
+                        .frame(height: 60)
+                    
+                    TutorialButton(
+                        title: "設定",
+                        width: 200,
+                        action: {
+                            if dataNumber > 0 && dataNumber <= 200 {
+                                UserDefaults.shared.set(catName, forKey: "catName")
+                                UserDefaults.shared.set(dataNumber, forKey: "dataNumber")
+                                UserDefaults.shared.set(true, forKey: "hasLaunched")
+                                withAnimation(.easeOut(duration: 0.3)) {
+                                    showSecondLaunchOverlay = false
+                                }
+                            }
+                        },
+                        isDisabled: dataNumber <= 0 || dataNumber > 200
+                    )
+                }
+                .padding(.bottom, 30)
+            }
+            .frame(width: 300)
+        }
+    }
+}
+
+// 共通のヘッダーコンポーネント
+struct TutorialHeader: View {
+    let title: String
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Text(title)
+                .font(.title)
+                .bold()
+                .foregroundColor(Color(red: 153/255, green: 153/255, blue: 153/255))
+                .padding(.top, -30)
+        }
+        .padding()
+    }
+}
+
+// 共通のボタンコンポーネント
+struct TutorialButton: View {
+    let title: String
+    let width: CGFloat
+    let action: () -> Void
+    var isDisabled: Bool = false
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .foregroundColor(.black)
+                .frame(width: width, height: 45)
+                .background(Color(red: 232/255, green: 201/255, blue: 160/255))
+                .cornerRadius(20)
+        }
+        .disabled(isDisabled)
+    }
+}
+
+// データ数値セレクターコンポーネント
+struct DataNumberSelector: View {
+    @Binding var dataNumber: Int
+    
+    private func incrementNumber() {
+        if dataNumber < 200 {
+            dataNumber = min(200, dataNumber + 1)
+        }
+    }
+    
+    private func decrementNumber() {
+        if dataNumber > 0 {
+            dataNumber = max(1, dataNumber - 1)
+        }
+    }
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            Button(action: decrementNumber) {
+                Image(systemName: "minus.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
+            }
+            .padding(.leading, 20)
+            
+            Text("\(dataNumber)")
+                .font(.system(size: 70, weight: .bold))
+                .frame(minWidth: 150)
+                .multilineTextAlignment(.center)
+            
+            Button(action: incrementNumber) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 30))
+                    .foregroundColor(Color(red: 232/255, green: 201/255, blue: 160/255))
+            }
+            .padding(.trailing, 20)
+        }
+        .frame(width: 200, height: 80)
     }
 }
