@@ -19,7 +19,6 @@ struct HomeView: View {
     @State private var localStaminaHours: Int = 0
     @State private var localStaminaMinutes: Int = 0
     @State private var localStaminaSeconds: Int = 0
-    @State private var currentMonthUsage: (wifi: Double, wwan: Double) = (0, 0)
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     private let staminaTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
