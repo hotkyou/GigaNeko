@@ -61,7 +61,7 @@ class GiganekoPoint: ObservableObject {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.likeUp, value: likeUp) }
     }
     ///キャットタワー効果ポイント
-    @Published var addLike: Int {
+    @Published var addLike: Double {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.addLike, value: addLike) }
     }
     ///招き猫効果のポイント
@@ -69,7 +69,7 @@ class GiganekoPoint: ObservableObject {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.addPoint, value: addPoint) }
     }
     ///宝箱効果のポイント
-    @Published var addPresents: Int {
+    @Published var addPresents: Double {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.addPresents, value: addPresents) }
     }
     ///招き猫レベル
@@ -139,7 +139,7 @@ class GiganekoPoint: ObservableObject {
     // MARK: - 初期化
     init() {
         // プロパティを直接初期化
-        self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 0
+        self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 20000
         self.addp = UserDefaults.shared.value(forKey: UserDefaultsKeys.addp) as? Double ?? 0.0
         self.pointsPerGB = UserDefaults.shared.value(forKey: UserDefaultsKeys.pointsPerGB) as? Int ?? 0
         self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 100.0
@@ -152,14 +152,14 @@ class GiganekoPoint: ObservableObject {
         self.like = UserDefaults.shared.value(forKey: UserDefaultsKeys.like) as? Int ?? 1
         self.likeExperience = UserDefaults.shared.value(forKey: UserDefaultsKeys.likeExperience) as? Int ?? 0
         self.likeUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.likeUp) as? Int ?? 200
-        self.addLike = UserDefaults.shared.value(forKey: UserDefaultsKeys.addLike) as? Int ?? 10
-        self.addPoint = UserDefaults.shared.value(forKey: UserDefaultsKeys.addPoint) as? Double ?? 1
-        self.addPresents = UserDefaults.shared.value(forKey: UserDefaultsKeys.addPresents) as? Int ?? 10
-        self.manekineko = UserDefaults.shared.value(forKey: UserDefaultsKeys.manekineko) as? Int ?? 0
+        self.addLike = UserDefaults.shared.value(forKey: UserDefaultsKeys.addLike) as? Double ?? 1.0
+        self.addPoint = UserDefaults.shared.value(forKey: UserDefaultsKeys.addPoint) as? Double ?? 1.0
+        self.addPresents = UserDefaults.shared.value(forKey: UserDefaultsKeys.addPresents) as? Double ?? 1.0
+        self.manekineko = UserDefaults.shared.value(forKey: UserDefaultsKeys.manekineko) as? Int ?? 1
         self.mlevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.mlevelUp) as? Int ?? 1000
-        self.catTower = UserDefaults.shared.value(forKey: UserDefaultsKeys.catTower) as? Int ?? 0
+        self.catTower = UserDefaults.shared.value(forKey: UserDefaultsKeys.catTower) as? Int ?? 1
         self.clevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.mlevelUp) as? Int ?? 1000
-        self.treasure = UserDefaults.shared.value(forKey: UserDefaultsKeys.treasure) as? Int ?? 0
+        self.treasure = UserDefaults.shared.value(forKey: UserDefaultsKeys.treasure) as? Int ?? 1
         self.tlevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.tlevelUp) as? Int ?? 1000
         if let savedDate = UserDefaults.shared.object(forKey: UserDefaultsKeys.lastLogin) as? Date {
                 self.lastLogin = savedDate
@@ -277,15 +277,15 @@ class GiganekoPoint: ObservableObject {
             print("無効なポイントです")
             return
         }
-        let addGift = gift * (addPresents / 100)
-        likeExperience += gift + addGift
+        let addGift = Double(gift) * (addPresents / 100)
+        likeExperience += gift + Int(addGift)
         likeLevelUp()
     }
     
     //撫でたときの好感度追加
     func caressLike(){
         let add = 5 * (addLike / 100)
-        likeExperience += 5 + add
+        likeExperience += 5 + Int(add)
         likeLevelUp()
     }
     
@@ -320,7 +320,7 @@ class GiganekoPoint: ObservableObject {
             print("ポイント消費に失敗しました")
             return
         }
-        addLike += 1
+        addLike += 0.5
         catTower += 1
         clevelUp += 1000
     }
@@ -332,9 +332,19 @@ class GiganekoPoint: ObservableObject {
             print("ポイント消費に失敗しました")
             return
         }
-        addPresents += 1
+        addPresents += 0.5
         treasure += 1
         tlevelUp += 1000
+    }
+    
+    func furniture(point: Int, category: String){
+        if category == "招き猫" {
+            manekinako(point: point)
+        } else if category == "キャットタワー"{
+            cattower(point: point)
+        }else if category == "宝箱"{
+            Treasure(point: point)
+        }
     }
     
     // MARK: - ストアの処理

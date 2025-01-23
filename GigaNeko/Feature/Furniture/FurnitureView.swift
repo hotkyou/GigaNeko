@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct FurnitureView: View {
-    @StateObject private var viewModel = FurnitureViewModel()
+    @ObservedObject var viewModel = FurnitureViewModel()
     
     var body: some View {
         ZStack {
@@ -78,10 +78,13 @@ struct FurnitureView: View {
                 )
                 
                 // Detail View
-                if let item = viewModel.selectedItem {
+                if var item = viewModel.selectedItem {
                     FurnitureDetailView(item: item) {
                         if viewModel.availablePoints >= item.pointCost {
                             viewModel.availablePoints -= item.pointCost
+                            item.level += 1
+                            item.effect += 0.5
+                            item.pointCost += 1000
                         }
                     }
                 }

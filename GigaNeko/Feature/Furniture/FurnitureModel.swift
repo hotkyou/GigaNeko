@@ -1,10 +1,18 @@
 import SwiftUI
 
-struct FurnitureItem: Identifiable {
+class FurnitureItem: ObservableObject, Identifiable {
     let id = UUID()
     let name: String
-    let level: Int
+    @Published var level: Int
     let imageName: String
-    let effect: String
-    let pointCost: Int
+    @Published var effect: Double
+    @Published var pointCost: Int
+
+    init(name: String, level: Int, imageName: String, effect: Double, pointCost: Int) {
+        self.name = name
+        self.level = level
+        self.imageName = imageName
+        self.effect = effect
+        self.pointCost = pointCost
+    }
 }
