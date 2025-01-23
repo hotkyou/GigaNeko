@@ -1,10 +1,15 @@
 import SwiftUI
 
 struct FurnitureDetailView: View {
-    let item: FurnitureItem
+    @ObservedObject var item: FurnitureItem
+    let giganekoPoint = GiganekoPoint.shared
     let onPurchase: () -> Void
     @State private var isAnimating = false
     @Environment(\.colorScheme) var colorScheme
+    
+    private func LevelUp() {
+        giganekoPoint.furniture(point: item.pointCost, category: item.name)
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -54,17 +59,29 @@ struct FurnitureDetailView: View {
                         Animation.easeInOut(duration: 1.0).repeatForever(),
                         value: isAnimating
                     )
-                
-                Text(item.effect)
-                    .font(.body)
-                    .foregroundColor(Constants.Colors.text.opacity(0.8))
+                if item.name == "招き猫"{
+                    Text("使用量取得ポイント+\(String(format: "%.1f", item.effect))%UP")
+                        .font(.body)
+                        .foregroundColor(Constants.Colors.text.opacity(0.8))
+                }else if item.name == "キャットタワー" {
+                    Text("撫で度+\(String(format: "%.1f", item.effect))%UP")
+                        .font(.body)
+                        .foregroundColor(Constants.Colors.text.opacity(0.8))
+                }else{
+                    Text("プレゼント時好感度+\(String(format: "%.1f", item.effect))%UP")
+                        .font(.body)
+                        .foregroundColor(Constants.Colors.text.opacity(0.8))
+                }
             }
             .padding(.vertical, 15)
             
             // Purchase Button
-            Button(action: onPurchase) {
+            Button(action: {
+                LevelUp()
+                onPurchase()
+            }) {
                 HStack {
-                    Text("購入する")
+                    Text("レベルアップ")
                         .fontWeight(.semibold)
                     
                     Spacer()
