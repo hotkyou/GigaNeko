@@ -70,57 +70,6 @@ struct HomeView: View {
             dataNumber = max(1, dataNumber - 1)
         }
     }
-    
-    private func requestNotificationPermission() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]){ success, error in
-            if success {
-                print("通知の許可が得られました")
-                scheduleNotification()
-            } else if let error = error {
-                print(error.localizedDescription)
-            }
-        }
-    }
-    
-    // 2. 通知をスケジュール
-    func scheduleNotification() {
-        let content = UNMutableNotificationContent()
-        content.title = "目標ギガ数に達しました"
-        content.body = "猫がブチギレています"
-        content.sound = .default
-        
-        // 10秒後に通知
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
-        
-        let request = UNNotificationRequest(
-            identifier: UUID().uuidString,
-            content: content,
-            trigger: trigger
-        )
-        
-        // 通知の登録状態を確認
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("通知の登録に失敗: \(error)")
-            } else {
-                print("通知の登録に成功")
-            }
-        }
-        
-        // 登録された通知を確認
-        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            print("保留中の通知: \(requests.count)件")
-        }
-    }
-    
-    func checkNotificationStatus() {
-        UNUserNotificationCenter.current().getNotificationSettings { settings in
-            print("通知の権限状態: \(settings.authorizationStatus.rawValue)")
-            print("通知バナーの設定: \(settings.alertSetting.rawValue)")
-            print("通知音の設定: \(settings.soundSetting.rawValue)")
-        }
-    }
-    
 
     // スタミナとストレス値
     var body: some View {
@@ -474,9 +423,13 @@ struct HomeView: View {
             condition()
             // 通知のリクエスト
             requestNotificationPermission()
+            // 通知スケジューラーの開始
+            NotificationScheduler.nshared.startScheduling()
         }
         .onDisappear {
             condition()
+            // 通知スケジューラーの停止
+            NotificationScheduler.nshared.cancelScheduledTask()
         }
         .scrollDisabled(true)
     }
