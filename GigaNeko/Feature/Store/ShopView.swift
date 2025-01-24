@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ShopView: View {
-    let giganekoPoint = GiganekoPoint.shared
+    @StateObject var giganekoPoint = GiganekoPoint.shared
     @State private var selectedTab = "えさ"
     @State private var selectedProduct: ShopProduct?
     @State private var showingProductDetail = false

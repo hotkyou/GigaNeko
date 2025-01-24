@@ -142,7 +142,7 @@ class GiganekoPoint: ObservableObject {
         self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 20000
         self.addp = UserDefaults.shared.value(forKey: UserDefaultsKeys.addp) as? Double ?? 0.0
         self.pointsPerGB = UserDefaults.shared.value(forKey: UserDefaultsKeys.pointsPerGB) as? Int ?? 0
-        self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 100.0
+        self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 50.0
         self.staminaTime = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaTime) as? Double ?? 24.0
         self.staminaHours = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaHours) as? Int ?? 0
         self.staminaMinutes = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaMinutes) as? Int ?? 0
@@ -192,7 +192,7 @@ class GiganekoPoint: ObservableObject {
             alertMessage = "使用ポイントが不足しています。現在のポイント: \(currentPoints)"
             return false
         } else {
-            currentPoints -= consumptionPoints
+            currentPoints = currentPoints - consumptionPoints
             alertMessage = nil
             return true
         }

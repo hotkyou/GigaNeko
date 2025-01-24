@@ -3,7 +3,7 @@ import SwiftUI
 struct ShopProductCard: View {
     let product: ShopProduct
     let onSelect: (ShopProduct) -> Void
-    let giganekoPoint = GiganekoPoint.shared
+    @StateObject var giganekoPoint = GiganekoPoint.shared
     
     private var canPurchase: Bool {
         product.category == .points || giganekoPoint.currentPoints >= product.price
