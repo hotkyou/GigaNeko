@@ -4,7 +4,7 @@ struct ShopProductDetailView: View {
     let product: ShopProduct
     @Binding var isShowing: Bool
     let onPurchase: () -> Void
-    let giganekoPoint = GiganekoPoint.shared
+    @StateObject var giganekoPoint = GiganekoPoint.shared
     
     private var canPurchase: Bool {
         product.category == .points || giganekoPoint.currentPoints >= product.price
@@ -70,7 +70,9 @@ struct ShopProductDetailView: View {
                     }
                 }
                 
-                Button(action: onPurchase) {
+                Button(action: {
+                    onPurchase()
+                }) {
                     HStack {
                         Text(canPurchase ? (product.category == .points ? "チャージする" : "購入する") : "ポイントが足りません")
                             .fontWeight(.bold)

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ShopHeaderView: View {
-    let giganekoPoint = GiganekoPoint.shared
+    @StateObject var giganekoPoint = GiganekoPoint.shared
     
     var body: some View {
         HStack {
