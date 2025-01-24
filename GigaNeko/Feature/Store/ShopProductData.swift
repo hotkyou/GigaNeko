@@ -15,16 +15,16 @@ class ShopProductData {
     ]
     
     let toys: [ShopProduct] = [
-        ShopProduct(name: "猫じゃらし", price: 20, category: "toys", image: "Toy",
+        ShopProduct(name: "猫じゃらし", price: 20, category: "toys", image: "ToyNeko",
                    description: "ストレス値を20減少させることができます。", subText: "")
     ]
     
     let presents: [ShopProduct] = [
-        ShopProduct(name: "赤色の袋", price: 1000, category: "presents", image: "Present",
+        ShopProduct(name: "赤色の袋", price: 1000, category: "presents", image: "PresentRed",
                    description: "好感度が100上がります", subText: ""),
-        ShopProduct(name: "青色の袋", price: 5000, category: "presents", image: "Present",
+        ShopProduct(name: "青色の袋", price: 5000, category: "presents", image: "PresentBlue",
                    description: "好感度が500上がります", subText: ""),
-        ShopProduct(name: "黄色の袋", price: 8000, category: "presents", image: "Present",
+        ShopProduct(name: "黄色の袋", price: 8000, category: "presents", image: "PresentYellow",
                    description: "好感度が1000上がります", subText: "")
     ]
     
