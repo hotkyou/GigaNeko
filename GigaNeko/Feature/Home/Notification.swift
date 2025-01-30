@@ -29,6 +29,7 @@ class NotificationScheduler {
     }
     
     private func executeScheduledTask() {
+        saveDataUsage()
         scheduleNotification()
         startScheduling()
     }
