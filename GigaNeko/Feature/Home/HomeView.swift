@@ -19,6 +19,7 @@ struct HomeView: View {
     @State private var localStaminaHours: Int = 0
     @State private var localStaminaMinutes: Int = 0
     @State private var localStaminaSeconds: Int = 0
+    @Environment(\.scenePhase) private var scenePhase
     let timer = Timer.publish(every: 2, on: .main, in: .common).autoconnect()
     private let staminaTimer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     private let requiredPettingDuration: TimeInterval = 1.0  // 必要な撫で時間（秒）
@@ -412,26 +413,51 @@ struct HomeView: View {
         }
         .onAppear {
             // 初期値を設定
-            localStaminaHours = giganekoPoint.staminaHours
-            localStaminaMinutes = giganekoPoint.staminaMinutes
-            localStaminaSeconds = giganekoPoint.staminaSeconds
+            syncStaminaTime()
+            
             // アプリ起動時にチュートリアル表示状態を確認
             let hasLaunched = UserDefaults.shared.bool(forKey: "hasLaunched")
             if !hasLaunched {
                 tutorialViewModel.showTutorial = true
             }
             condition()
-            // 通知のリクエスト
-            requestNotificationPermission()
+            
+            // 通知関係
+            if !UserDefaults.shared.bool(forKey: "hasRequestedNotifications") {
+                requestNotificationPermission()
+                UserDefaults.shared.set(true, forKey: "hasRequestedNotifications")
+            }
+            
             // 通知スケジューラーの開始
             NotificationScheduler.nshared.startScheduling()
         }
         .onDisappear {
             condition()
             // 通知スケジューラーの停止
-            NotificationScheduler.nshared.cancelScheduledTask()
+            NotificationScheduler.nshared.saveNotificationSettings()
+        }
+        .onChange(of: scenePhase) { oldPhase, newPhase in
+            if newPhase == .active {
+                syncStaminaTime()
+            }
         }
         .scrollDisabled(true)
+    }
+    
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
+            if granted {
+                print("通知の許可が得られました")
+            } else {
+                print("通知の許可が得られませんでした")
+            }
+        }
+    }
+    
+    private func syncStaminaTime() {
+        localStaminaHours = giganekoPoint.staminaHours
+        localStaminaMinutes = giganekoPoint.staminaMinutes
+        localStaminaSeconds = giganekoPoint.staminaSeconds
     }
     
     // ローカルタイマー更新処理を追加
