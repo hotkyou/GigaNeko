@@ -21,11 +21,18 @@ enum TimeSegment: String, CaseIterable {
     }
 }
 
-struct DataPoint: Identifiable {
+struct DataPoint: Identifiable, Equatable {
     let id = UUID()
     let date: Date
     let wifi: Double
     let wwan: Double
     
     var total: Double { wifi + wwan }
+    
+    static func == (lhs: DataPoint, rhs: DataPoint) -> Bool {
+        return lhs.id == rhs.id &&
+               lhs.date == rhs.date &&
+               lhs.wifi == rhs.wifi &&
+               lhs.wwan == rhs.wwan
+    }
 }

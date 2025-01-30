@@ -68,6 +68,10 @@ struct NetworkUsageChart: View {
             .chartYScale(domain: 0...getMaxValue())
             .chartXAxis(content: customXAxis)
             .chartYAxis(content: customYAxis)
+            .animation(.easeInOut(duration: 0.5), value: selectedSegment)
+            .animation(.easeInOut(duration: 0.5), value: selectedTab)
+            .animation(.easeInOut(duration: 0.5), value: displayData)
+            .animation(.easeInOut(duration: 0.5), value: predictionData)
             .chartOverlay { proxy in
                 GeometryReader { geometry in
                     Rectangle()

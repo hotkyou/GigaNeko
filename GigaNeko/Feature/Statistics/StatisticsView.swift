@@ -31,6 +31,32 @@ struct StatisticsView: View {
                 .padding(.vertical, 16)
             }
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink(destination: MobilePlansView()) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "yensign.circle.fill")
+                            .imageScale(.medium)
+                        Text("プラン")
+                            .font(.system(size: 13, weight: .medium))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 5)
+                    .background(
+                        currentColor.gradient
+                            .opacity(0.9)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(.white.opacity(0.3), lineWidth: 0.5)
+                    )
+                    .shadow(color: currentColor.opacity(0.2), radius: 3, x: 0, y: 2)
+                }
+            }
+        }
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
         .onAppear { updatePredictions() }
         .onChange(of: selectedSegment) { updatePredictions() }
