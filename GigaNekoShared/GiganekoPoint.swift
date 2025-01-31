@@ -381,4 +381,13 @@ class GiganekoPoint: ObservableObject {
     private func saveToUserDefaults<T>(key: String, value: T) {
         UserDefaults.shared.set(value, forKey: key)
     }
+    
+    // MARK: - 他のクラス用処理
+    
+    func updateStaminaTime() {
+        let totalSeconds = Int(staminaTime * 3600) // 時間を秒に変換
+        staminaHours = totalSeconds / 3600
+        staminaMinutes = (totalSeconds % 3600) / 60
+        staminaSeconds = totalSeconds % 60
+    }
 }

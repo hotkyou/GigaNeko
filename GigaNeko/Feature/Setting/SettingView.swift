@@ -16,7 +16,8 @@ struct SettingView: View {
         (.init("square.and.arrow.up"), "アプリをシェアする", .share),
         (.init("exclamationmark.lock"), "利用規約", .terms),
         (.init("hand.raised"), "プライバシーポリシー", .privacy),
-        (.init("note.text"), "プラン一覧", .plan)
+        (.init("note.text"), "プラン一覧", .plan),
+        (.init("bell"), "通知詳細設定", .notification)
     ]
     
     var body: some View {
@@ -60,29 +61,6 @@ struct SettingView: View {
                                         radius: 10, x: 0, y: 5)
                         )
                         .padding(.horizontal)
-                        
-                        // Notification Toggle
-                        HStack {
-                            Image(systemName: "bell.fill")
-                                .font(.system(size: 22))
-                                .foregroundColor(.primary)
-                            
-                            Text("通知")
-                                .font(.system(size: 17))
-                            
-                            Spacer()
-                            
-                            Toggle("", isOn: $toggleState1)
-                                .toggleStyle(SwitchToggleStyle(tint: Color.orange))
-                        }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(.systemBackground))
-                                .shadow(color: Color.black.opacity(0.05),
-                                        radius: 10, x: 0, y: 5)
-                        )
-                        .padding(.horizontal)
                     }
                     .padding(.vertical)
                 }
@@ -93,7 +71,7 @@ struct SettingView: View {
 
 // Menu Item Type
 enum MenuItemType {
-    case review, share, terms, privacy, plan
+    case review, share, terms, privacy, plan, notification
 }
 
 // Menu Item View
@@ -123,6 +101,10 @@ struct MenuItemView: View {
                 }
             case .plan:
                 NavigationLink(destination: MobilePlansView()) {
+                    menuContent
+                }
+            case .notification:
+                NavigationLink(destination: NotificationSettingsView()) {
                     menuContent
                 }
             }
