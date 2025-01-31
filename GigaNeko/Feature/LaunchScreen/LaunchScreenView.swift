@@ -13,8 +13,6 @@ struct LaunchScreenView: View {
     var body: some View {
         if isLoading {
             ZStack {
-                Color("Primary")
-                    .ignoresSafeArea() // ステータスバーまで塗り潰すために必要
                 Image("LunchScreenImage")
                     .resizable()
                     .aspectRatio(contentMode: .fill) // .fitから.fillに変更

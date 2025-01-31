@@ -53,6 +53,15 @@ class NotificationScheduler {
         }
         
         func shouldNotify(for type: NotificationType) -> Bool {
+            // 最後の通知時刻をチェック
+            if let lastNotification = UserDefaults.shared.object(forKey: "lastNotificationTime_\(type.rawValue)") as? Date {
+                // 同じ日に既に通知を送信している場合は false を返す
+                if Calendar.current.isDate(lastNotification, inSameDayAs: Date()) {
+                    return false
+                }
+            }
+            
+            // 各タイプの条件チェック
             switch type {
             case .stamina:
                 return giganeko.stamina <= 1
@@ -171,8 +180,33 @@ class NotificationScheduler {
         
         let trigger: UNNotificationTrigger
         switch type {
+        case .dailyReminder, .weeklyReport:
+            trigger = createCalendarTrigger(for: type)
+        default:
+            trigger = UNTimeIntervalNotificationTrigger(timeInterval: checkInterval, repeats: false)
+        }
+        
+        let identifier = "\(type.rawValue)_notification"
+        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        
+        // 既存の同じタイプの通知を削除
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        
+        // 新しい通知をスケジュール
+        UNUserNotificationCenter.current().add(request) { error in
+            if let error = error {
+                print("Failed to schedule notification: \(error.localizedDescription)")
+            } else {
+                // 最後に送信された時間を更新
+                UserDefaults.shared.set(Date(), forKey: "lastNotificationTime_\(type.rawValue)")
+            }
+        }
+    }
+
+    private func createCalendarTrigger(for type: NotificationType) -> UNCalendarNotificationTrigger {
+        var components = DateComponents()
+        switch type {
         case .dailyReminder:
-            var components = DateComponents()
             if let dailyTime = UserDefaults.shared.object(forKey: "dailyReminderTime") as? Date {
                 components.hour = calendar.component(.hour, from: dailyTime)
                 components.minute = calendar.component(.minute, from: dailyTime)
@@ -180,10 +214,7 @@ class NotificationScheduler {
                 components.hour = 20  // デフォルト値
                 components.minute = 0
             }
-            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-            
         case .weeklyReport:
-            var components = DateComponents()
             if let weeklyTime = UserDefaults.shared.object(forKey: "weeklyReportTime") as? Date {
                 components.hour = calendar.component(.hour, from: weeklyTime)
                 components.minute = calendar.component(.minute, from: weeklyTime)
@@ -192,37 +223,19 @@ class NotificationScheduler {
                 components.minute = 0
             }
             components.weekday = UserDefaults.shared.integer(forKey: "weeklyReportWeekday")
-            trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
-            
         default:
-            trigger = UNTimeIntervalNotificationTrigger(timeInterval: checkInterval, repeats: false)
+            fatalError("Unexpected notification type for calendar trigger")
         }
-        
-        let request = UNNotificationRequest(
-            identifier: "\(type.rawValue)_\(UUID().uuidString)",
-            content: content,
-            trigger: trigger
-        )
-        
-        let semaphore = DispatchSemaphore(value: 0)
-        
-        UNUserNotificationCenter.current().add(request) { error in
-            if let error = error {
-                print("Failed to schedule notification: \(error.localizedDescription)")
-            }
-            semaphore.signal()
-        }
-        
-        _ = semaphore.wait(timeout: .now() + 5.0)
+        return UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
     }
-    
+
     private func checkAndUpdateNotifications() {
         saveDataUsage()
         let checker = NotificationConditionChecker()
         
         NotificationType.allCases.forEach { type in
             if UserDefaults.shared.bool(forKey: "notification_\(type.rawValue)_enabled") {
-                if checker.shouldNotify(for: type) {
+                if checker.shouldNotify(for: type) && canSendNotification(for: type) {
                     scheduleNotification(for: type)
                 } else {
                     removeNotifications(for: type)
@@ -230,15 +243,19 @@ class NotificationScheduler {
             }
         }
     }
-    
-    private func removeNotifications(for type: NotificationType) {
-        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let identifiersToRemove = requests
-                .filter { $0.identifier.starts(with: type.rawValue) }
-                .map { $0.identifier }
-            
-            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiersToRemove)
+
+    private func canSendNotification(for type: NotificationType) -> Bool {
+        guard let lastNotificationTime = UserDefaults.shared.object(forKey: "lastNotificationTime_\(type.rawValue)") as? Date else {
+            return true
         }
+        
+        // 同じ日に既に通知を送信している場合は false を返す
+        return !Calendar.current.isDate(lastNotificationTime, inSameDayAs: Date())
+    }
+
+    private func removeNotifications(for type: NotificationType) {
+        let identifier = "\(type.rawValue)_notification"
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
     }
     
     // MARK: - Cleanup

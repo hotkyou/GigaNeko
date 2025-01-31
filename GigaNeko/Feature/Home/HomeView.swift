@@ -455,6 +455,7 @@ struct HomeView: View {
     }
     
     private func syncStaminaTime() {
+        GiganekoPoint.shared.updateStaminaTime()
         localStaminaHours = giganekoPoint.staminaHours
         localStaminaMinutes = giganekoPoint.staminaMinutes
         localStaminaSeconds = giganekoPoint.staminaSeconds
