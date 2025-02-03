@@ -7,6 +7,7 @@ import BackgroundTasks
 struct GigaNekoApp: App {
     init() {
         saveDataUsage()
+        NotificationScheduler.nshared.startScheduling()
     }
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate

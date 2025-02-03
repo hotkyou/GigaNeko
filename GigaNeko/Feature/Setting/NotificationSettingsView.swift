@@ -8,6 +8,7 @@ struct NotificationSettingsView: View {
     @State private var selectedWeekday: Int = Calendar.current.component(.weekday, from: Date())
     @State private var showingPermissionAlert = false
     @State private var targetDataUsage: Double = UserDefaults.shared.double(forKey: "targetDataUsage")
+    @State private var scheduledNotifications: [UNNotificationRequest] = []
     
     private let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -78,17 +79,39 @@ struct NotificationSettingsView: View {
                         Text("通知権限を確認")
                     }
                 }
+                Section(header: Text("スケジュールされた通知")) {
+                    ForEach(scheduledNotifications, id: \.identifier) { request in
+                        VStack(alignment: .leading) {
+                            Text(request.content.title)
+                                .font(.headline)
+                            Text(request.content.body)
+                                .font(.subheadline)
+                            if let trigger = request.trigger as? UNCalendarNotificationTrigger,
+                               let nextTriggerDate = trigger.nextTriggerDate() {
+                                Text("次回: \(nextTriggerDate, formatter: DateFormatter.shortDateTime)")
+                                    .font(.caption)
+                            }
+                        }
+                    }
+                }
             }
             .navigationTitle("通知設定")
         }
         .onAppear {
-            loadCurrentSettings()
+            loadCurrentSettingsFromUserDefaults()
+            loadScheduledNotifications()
         }
         .alert("通知権限が必要です", isPresented: $showingPermissionAlert) {
             Button("設定を開く") { openSettings() }
             Button("キャンセル", role: .cancel) {}
         } message: {
             Text("通知を受け取るには、設定アプリから権限を許可してください。")
+        }
+    }
+    
+    private func loadScheduledNotifications() {
+        NotificationScheduler.nshared.getScheduledNotifications { notifications in
+            self.scheduledNotifications = notifications
         }
     }
     
@@ -110,21 +133,15 @@ struct NotificationSettingsView: View {
         }
     }
     
-    private func loadCurrentSettings() {
+    private func loadCurrentSettingsFromUserDefaults() {
         NotificationType.allCases.forEach { type in
             let key = "notification_\(type.rawValue)_enabled"
             notificationSettings[type] = UserDefaults.shared.bool(forKey: key)
         }
         
-        if let savedDailyTime = UserDefaults.shared.object(forKey: "dailyReminderTime") as? Date {
-            dailyReminderTime = savedDailyTime
-        }
-        if let savedWeeklyTime = UserDefaults.shared.object(forKey: "weeklyReportTime") as? Date {
-            weeklyReportTime = savedWeeklyTime
-        }
-        if let savedWeekday = UserDefaults.shared.object(forKey: "weeklyReportWeekday") as? Int {
-            selectedWeekday = savedWeekday
-        }
+        dailyReminderTime = UserDefaults.shared.object(forKey: "dailyReminderTime") as? Date ?? Calendar.current.date(from: DateComponents(hour: 20)) ?? Date()
+        weeklyReportTime = UserDefaults.shared.object(forKey: "weeklyReportTime") as? Date ?? Calendar.current.date(from: DateComponents(hour: 18)) ?? Date()
+        selectedWeekday = UserDefaults.shared.integer(forKey: "weeklyReportWeekday")
         targetDataUsage = UserDefaults.shared.double(forKey: "targetDataUsage")
     }
     
@@ -132,11 +149,17 @@ struct NotificationSettingsView: View {
         let key = "notification_\(type.rawValue)_enabled"
         UserDefaults.shared.set(enabled, forKey: key)
         NotificationScheduler.nshared.toggleNotificationType(type, enabled: enabled)
+        NotificationScheduler.nshared.rescheduleAllNotifications()
+        loadScheduledNotifications()
+        print("nt")
     }
     
     private func saveAndUpdateDailyReminder(_ time: Date) {
         UserDefaults.shared.set(time, forKey: "dailyReminderTime")
         NotificationScheduler.nshared.toggleNotificationType(.dailyReminder, enabled: true)
+        NotificationScheduler.nshared.rescheduleAllNotifications()
+        loadScheduledNotifications()
+        print("dr")
     }
     
     private func saveAndUpdateWeeklyReport(time: Date? = nil, weekday: Int? = nil) {
@@ -147,11 +170,17 @@ struct NotificationSettingsView: View {
             UserDefaults.shared.set(weekday, forKey: "weeklyReportWeekday")
         }
         NotificationScheduler.nshared.toggleNotificationType(.weeklyReport, enabled: true)
+        NotificationScheduler.nshared.rescheduleAllNotifications()
+        loadScheduledNotifications()
+        print("wr")
     }
     
     private func saveAndUpdateDataUsage(_ value: Double) {
         UserDefaults.shared.set(value, forKey: "targetDataUsage")
         NotificationScheduler.nshared.updateDataUsageNotification()
+        NotificationScheduler.nshared.rescheduleAllNotifications()
+        loadScheduledNotifications()
+        print("du")
     }
     
     func requestNotificationPermission() {
@@ -177,4 +206,13 @@ struct NotificationSettingsView_Previews: PreviewProvider {
     static var previews: some View {
         NotificationSettingsView()
     }
+}
+
+extension DateFormatter {
+    static let shortDateTime: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
+        return formatter
+    }()
 }

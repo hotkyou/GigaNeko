@@ -29,6 +29,16 @@ enum NotificationType: String, CaseIterable {
     }
 }
 
+extension NotificationScheduler {
+    func getScheduledNotifications(completion: @escaping ([UNNotificationRequest]) -> Void) {
+        UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
+            DispatchQueue.main.async {
+                completion(requests)
+            }
+        }
+    }
+}
+
 class NotificationScheduler {
     static let nshared = NotificationScheduler()
     private var periodicCheckTask: DispatchWorkItem?
@@ -96,9 +106,17 @@ class NotificationScheduler {
     func startScheduling() {
         guard !isRunning else { return }
         isRunning = true
-        
+
+        loadCurrentSettings()
         scheduleAllNotifications()
         startPeriodicCheck()
+        print("通知スケジュールスタート")
+    }
+    
+    func rescheduleAllNotifications() {
+        cancelAllScheduledTasks()
+        loadCurrentSettings()
+        scheduleAllNotifications()
     }
     
     func updateDataUsageNotification() {
@@ -160,6 +178,30 @@ class NotificationScheduler {
         periodicCheckTask = nil
     }
     
+    private func loadCurrentSettings() {
+        NotificationType.allCases.forEach { type in
+            let key = "notification_\(type.rawValue)_enabled"
+            // デフォルトを true に設定
+            if UserDefaults.shared.object(forKey: key) == nil {
+                UserDefaults.shared.set(true, forKey: key)
+            }
+        }
+        
+        // 他の設定も同様にデフォルト値を設定
+        if UserDefaults.shared.object(forKey: "dailyReminderTime") == nil {
+            UserDefaults.shared.set(Calendar.current.date(from: DateComponents(hour: 20)) ?? Date(), forKey: "dailyReminderTime")
+        }
+        if UserDefaults.shared.object(forKey: "weeklyReportTime") == nil {
+            UserDefaults.shared.set(Calendar.current.date(from: DateComponents(hour: 18)) ?? Date(), forKey: "weeklyReportTime")
+        }
+        if UserDefaults.shared.object(forKey: "weeklyReportWeekday") == nil {
+            UserDefaults.shared.set(Calendar.current.component(.weekday, from: Date()), forKey: "weeklyReportWeekday")
+        }
+        if UserDefaults.shared.object(forKey: "targetDataUsage") == nil {
+            UserDefaults.shared.set(0.0, forKey: "targetDataUsage")
+        }
+    }
+    
     private func scheduleAllNotifications() {
         let checker = NotificationConditionChecker()
         
@@ -195,9 +237,9 @@ class NotificationScheduler {
         // 新しい通知をスケジュール
         UNUserNotificationCenter.current().add(request) { error in
             if let error = error {
-                print("Failed to schedule notification: \(error.localizedDescription)")
+                print("Failed to schedule notification for \(type): \(error.localizedDescription)")
             } else {
-                // 最後に送信された時間を更新
+                print("Successfully scheduled notification for \(type)")
                 UserDefaults.shared.set(Date(), forKey: "lastNotificationTime_\(type.rawValue)")
             }
         }
@@ -208,18 +250,16 @@ class NotificationScheduler {
         switch type {
         case .dailyReminder:
             if let dailyTime = UserDefaults.shared.object(forKey: "dailyReminderTime") as? Date {
-                components.hour = calendar.component(.hour, from: dailyTime)
-                components.minute = calendar.component(.minute, from: dailyTime)
+                components = Calendar.current.dateComponents([.hour, .minute], from: dailyTime)
             } else {
-                components.hour = 20  // デフォルト値
+                components.hour = 20
                 components.minute = 0
             }
         case .weeklyReport:
             if let weeklyTime = UserDefaults.shared.object(forKey: "weeklyReportTime") as? Date {
-                components.hour = calendar.component(.hour, from: weeklyTime)
-                components.minute = calendar.component(.minute, from: weeklyTime)
+                components = Calendar.current.dateComponents([.hour, .minute], from: weeklyTime)
             } else {
-                components.hour = 18  // デフォルト値
+                components.hour = 18
                 components.minute = 0
             }
             components.weekday = UserDefaults.shared.integer(forKey: "weeklyReportWeekday")
