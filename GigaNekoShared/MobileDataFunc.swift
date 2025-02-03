@@ -70,14 +70,7 @@ func saveDataUsage() {
     //ポイント付与
     let giganeko = GiganekoPoint.shared
     let userDataSetting = UserDefaults.shared.integer(forKey: "dataNumber")
-    giganeko.calculatePointsPerGB(settingDataGB: userDataSetting)
-    print("wwan type: \(type(of: differenceEntry["wwan"]))")
-    if let wwanValue = differenceEntry["wwan"] as? Double {
-        let wwanDifference = wwanValue / 1_073_741_824
-        giganeko.calculatePoints(oneMonthData: wwanDifference)
-    } else {
-        print("Failed to retrieve 'wwan' as a Double from differenceEntry.")
-    }
+    giganeko.CalculatePoints(settingDataGB: userDataSetting)
     
     UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
     UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")

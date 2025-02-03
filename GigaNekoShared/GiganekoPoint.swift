@@ -10,13 +10,17 @@ class GiganekoPoint: ObservableObject {
     @Published var currentPoints: Int {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.currentPoints, value: currentPoints) }
     }
-    @Published var addp: Double {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.addp, value: addp) }
+    
+    ///実行したかフラグ
+    @Published var isAlreadyExecuted: Bool {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.isAlreadyExecuted, value: isAlreadyExecuted) }
     }
-    ///一時間あたりのポイント
-    @Published var pointsPerGB: Int {
-        didSet { saveToUserDefaults(key: UserDefaultsKeys.pointsPerGB, value: pointsPerGB) }
+    
+    ///最後実行した月
+    @Published var lastExecutedMonth: Int {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.lastExecutedMonth, value: lastExecutedMonth) }
     }
+    
     ///スタミナ
     @Published var stamina: Double {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.stamina, value: stamina) }
@@ -103,7 +107,7 @@ class GiganekoPoint: ObservableObject {
     @Published var alertMessage: String?
 
     // MARK: - 定数
-    private static let maxPoints = 3000 // 一ヶ月にもらえる最大のポイント数
+    private static let maxPoints = 5000 // 一ヶ月にもらえる最大のポイント数
     private static let billingOptions = [120, 380, 800, 1200, 2400, 3900, 8000] // 課金ポイント量
     private static let feedOptions = [0: 24, 100: 48, 200: 72, 900: 240] // 必要ポイント: スタミナ時間
     private static let giftOptions = [1000: 100, 5000: 500, 10000: 1000] // 必要ポイント: 好感度
@@ -112,8 +116,8 @@ class GiganekoPoint: ObservableObject {
     // UserDefaultsキー
     private struct UserDefaultsKeys {
         static let currentPoints = "GiganekoPoint.currentPoints"
-        static let addp = "GiganekoPoint.addp"
-        static let pointsPerGB = "GiganekoPoint.pointsPerGB"
+        static let isAlreadyExecuted = "GiganekoPoint.isAlreadyExecuted"
+        static let lastExecutedMonth = "GiganekoPoint.lastExecutedMonth"
         static let stamina = "GiganekoPoint.stamina"
         static let staminaTime = "GiganekoPoint.staminaTime"
         static let staminaHours = "GiganekoPoint.staminaHours"
@@ -140,8 +144,8 @@ class GiganekoPoint: ObservableObject {
     init() {
         // プロパティを直接初期化
         self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 20000
-        self.addp = UserDefaults.shared.value(forKey: UserDefaultsKeys.addp) as? Double ?? 0.0
-        self.pointsPerGB = UserDefaults.shared.value(forKey: UserDefaultsKeys.pointsPerGB) as? Int ?? 0
+        self.isAlreadyExecuted = UserDefaults.shared.value(forKey: UserDefaultsKeys.isAlreadyExecuted) as? Bool ?? false
+        self.lastExecutedMonth = UserDefaults.shared.value(forKey: UserDefaultsKeys.lastExecutedMonth) as? Int ?? 0
         self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 50.0
         self.staminaTime = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaTime) as? Double ?? 24.0
         self.staminaHours = UserDefaults.shared.value(forKey: UserDefaultsKeys.staminaHours) as? Int ?? 0
@@ -166,26 +170,74 @@ class GiganekoPoint: ObservableObject {
             } else {
                 self.lastLogin = Date()
             }
+        
+        resetExecutedFlagIfNeeded()
     }
 
     // MARK: - ポイント関連の処理
-
-    /// 1GBあたりのポイント量を計算
-    func calculatePointsPerGB(settingDataGB: Int) {
-        guard settingDataGB > 0 else { return }
-        pointsPerGB = Self.maxPoints / settingDataGB
-        print("1GBあたりのポイント量を計算")
-    }
-
-    /// データ使用量に基づくポイント追加
-    func calculatePoints(oneMonthData: Double) {
+    
+    ///インストールされた月のポイント計算
+    /// 通信量分のポイント追加
+    func CalculatePoints(settingDataGB: Int) {
+        // 初日チェック＆既に実行済みか確認
+        guard checkLastDayOfMonth(), !isAlreadyExecuted else { return }
         
-        let getPoints = Double(pointsPerGB) * oneMonthData
-        let addition = getPoints * (addPoint / 100)
-        let points = getPoints + addition
-        currentPoints = currentPoints + Int(points)
-        print("データ使用量に基づくポイント追加")
+        // 使った通信量取得
+        let (_, wwan) = getCurrentMonthUsage()
+        
+        // 残りの通信量割合を計算（節約割合）
+        let savedRate = 1 - (wwan / Double(settingDataGB))
+        
+        // 付与ポイントの計算を分割
+        let adjustmentFactor = 1 / Double(settingDataGB)
+        let basePoints = Double(GiganekoPoint.maxPoints) * savedRate * adjustmentFactor * 10
+        
+        // ボーナスポイント計算
+        let addition = basePoints * (addPoint / 100)
+        
+        // 総ポイントを計算
+        let totalPoints = basePoints + addition
+        
+        // ポイントを加算
+        currentPoints += Int(totalPoints)
+        
+        // 実行済みフラグを更新
+        isAlreadyExecuted = true
+        lastExecutedMonth = Calendar.current.component(.month, from: Date())
+
+        print("データ使用量に基づくポイント追加: \(Int(totalPoints))pt")
     }
+
+    
+    /// 月の最終日かどうかをチェック
+    func checkLastDayOfMonth() -> Bool {
+        let calendar = Calendar.current
+        let currentDate = Date()
+            
+        // 当月の最終日を取得
+        if let lastDayOfMonth = calendar.date(from: DateComponents(
+            year: calendar.component(.year, from: currentDate),
+            month: calendar.component(.month, from: currentDate) + 1,
+            day: 1)) {  // `day: 0` は前月の最終日を取得するテクニック
+            let isLastDay = calendar.isDate(currentDate, inSameDayAs: lastDayOfMonth)
+            return isLastDay
+        }
+        return false
+    }
+    
+    /// 月が変わったらisAlreadyExecutedをリセット
+    func resetExecutedFlagIfNeeded() {
+        let currentMonth = Calendar.current.component(.month, from: Date())
+            
+        if lastExecutedMonth != currentMonth {
+            isAlreadyExecuted = false
+            lastExecutedMonth = currentMonth
+        }
+    }
+    
+    ///2ヶ月以降のポイント計算
+    
+    
     /// ポイントを消費
     func consumePoints(consumptionPoints: Int)-> Bool {
         if consumptionPoints > currentPoints {
