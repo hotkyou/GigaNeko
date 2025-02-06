@@ -74,6 +74,9 @@
             ReferencedContainer = "container:GigaNeko.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
+      <StoreKitConfigurationFileReference
+         identifier = "../../GigaNeko/Billing/StoreKitConf.storekit">
+      </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
       buildConfiguration = "Release"
