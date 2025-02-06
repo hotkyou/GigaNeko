@@ -63,6 +63,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         // 通信量を取得して保存
         saveDataUsage()
         
+        //通知のチェック
+        NotificationScheduler.nshared.checkAndScheduleNotifications()
+        
         
         // タスク完了のマネージメント
         task.expirationHandler = {
