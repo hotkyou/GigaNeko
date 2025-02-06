@@ -558,7 +558,6 @@ struct NameInputView: View {
                                 title: "キャンセル",
                                 width: 95,
                                 action: {
-                                    catName = tempCatName
                                     showFirstLaunchOverlay = false
                                     isEditingName = false
                                 }

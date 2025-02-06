@@ -100,9 +100,8 @@ struct PrivacyPolicyView: View {
                 // TODO: お問い合わせ内容入れる
                 PolicySection(title: "10. お問い合わせ") {
                     Text("プライバシーに関するお問い合わせは、以下までご連絡ください：")
-                    Text("[運営者名]")
-                    Text("[メールアドレス]")
-                    Text("[住所]")
+                    Text("[運営者名] hotkyou")
+                    Text("[メールアドレス] hottarakasi.kyou@gmail.com")
                 }
             }
             .padding()

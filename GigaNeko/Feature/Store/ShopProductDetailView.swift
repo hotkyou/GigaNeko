@@ -5,6 +5,7 @@ struct ShopProductDetailView: View {
     @Binding var isShowing: Bool
     let onPurchase: () -> Void
     @StateObject var giganekoPoint = GiganekoPoint.shared
+    @StateObject private var purchaseManager = PurchaseManager()
     
     private var canPurchase: Bool {
         product.category == .points || giganekoPoint.currentPoints >= product.price
@@ -71,7 +72,14 @@ struct ShopProductDetailView: View {
                 }
                 
                 Button(action: {
-                    onPurchase()
+                    if product.category == .points {
+                        purchaseManager.onPurchaseSuccess = {
+                            giganekoPoint.billingPoints(index: product.id)
+                        }
+                        purchaseManager.purchaseProduct(productId: product.productId)
+                    } else {
+                        onPurchase()
+                    }
                 }) {
                     HStack {
                         Text(canPurchase ? (product.category == .points ? "チャージする" : "購入する") : "ポイントが足りません")
@@ -86,7 +94,7 @@ struct ShopProductDetailView: View {
                     .background(canPurchase ? Color.yellow : Color.gray)
                     .cornerRadius(25)
                 }
-                .disabled(!canPurchase)
+                .disabled(!canPurchase || purchaseManager.isProcessingPayment)
             }
             
             // Close Button
