@@ -71,7 +71,7 @@ struct HomeView: View {
             dataNumber = max(1, dataNumber - 1)
         }
     }
-
+    
     // スタミナとストレス値
     var body: some View {
         NavigationStack {
@@ -111,7 +111,7 @@ struct HomeView: View {
                                             .cornerRadius(2)
                                         
                                         let progress = dataNumber > 0 ?
-                                            CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
+                                        CGFloat(min(max(0, wwan) / Double(dataNumber), 1.0)) : 0
                                         
                                         Rectangle()
                                             .fill(.orange)
@@ -410,6 +410,10 @@ struct HomeView: View {
         } // NavigationView
         .onReceive(staminaTimer) { _ in
             updateLocalStaminaTime()
+        }
+        .safeAreaInset(edge: .bottom) {
+            BannerAd(adUnitID: "ca-app-pub-3940256099942544/2934735716")
+                .frame(height: 50)
         }
         .onAppear {
             // 初期値を設定
