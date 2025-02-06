@@ -6,8 +6,6 @@ enum NotificationType: String, CaseIterable {
     case stamina = "stamina"           // スタミナ回復通知
     case stress = "stress"             // ストレス警告通知
     case gigaLimit = "gigaLimit"       // データ使用量限界通知
-    case dailyReminder = "dailyReminder" // 日次リマインダー
-    case weeklyReport = "weeklyReport"  // 週次レポート
     
     var content: (title: String, body: String) {
         switch self {
@@ -17,14 +15,6 @@ enum NotificationType: String, CaseIterable {
             return ("ストレスが限界です", "猫の機嫌が悪くなっています。癒してあげましょう！")
         case .gigaLimit:
             return ("目標ギガ数に達しました", "データ使用量が制限に近づいています。確認してください。")
-        case .dailyReminder:
-            let today = Date()
-            let dailyUsage = loadHourlyDataUsage(for: today).reduce(0.0) { sum, data in
-                sum + (Double(data.wwan) / (1024 * 1024 * 1024))
-            }
-            return ("今日のデータ通信量", String(format: "今日は%.2fGB使用しました", dailyUsage))
-        case .weeklyReport:
-            return ("週間レポート", "今週のデータ使用状況をチェックしましょう")
         }
     }
 }
@@ -46,6 +36,18 @@ class NotificationScheduler {
     
     private let checkInterval: TimeInterval = 3600 // 1時間
     private let calendar = Calendar.current
+    
+    func checkAndScheduleNotifications() {
+        let checker = NotificationConditionChecker()
+        
+        NotificationType.allCases.forEach { type in
+            if UserDefaults.shared.bool(forKey: "notification_\(type.rawValue)_enabled") {
+                if checker.shouldNotify(for: type) && canSendNotification(for: type) {
+                    scheduleNotification(for: type)
+                }
+            }
+        }
+    }
     
     // MARK: - Notification Condition Checker
     private struct NotificationConditionChecker {
@@ -79,26 +81,7 @@ class NotificationScheduler {
                 return giganeko.stress >= 80
             case .gigaLimit:
                 return (Double(dataLimit) - currentUsage) <= targetDataUsage
-            case .dailyReminder:
-                return shouldSendDailyReminder()
-            case .weeklyReport:
-                return isWeeklyReportTime()
             }
-        }
-        
-        private func shouldSendDailyReminder() -> Bool {
-            guard let lastReminder = UserDefaults.shared.object(forKey: "lastDailyReminder") as? Date else {
-                return true
-            }
-            return !Calendar.current.isDate(lastReminder, inSameDayAs: Date())
-        }
-        
-        private func isWeeklyReportTime() -> Bool {
-            guard let lastReport = UserDefaults.shared.object(forKey: "lastWeeklyReport") as? Date else {
-                return true
-            }
-            let weekDifference = Calendar.current.dateComponents([.weekOfYear], from: lastReport, to: Date())
-            return weekDifference.weekOfYear ?? 0 >= 1
         }
     }
     
@@ -220,13 +203,7 @@ class NotificationScheduler {
         content.body = notificationContent.body
         content.sound = .default
         
-        let trigger: UNNotificationTrigger
-        switch type {
-        case .dailyReminder, .weeklyReport:
-            trigger = createCalendarTrigger(for: type)
-        default:
-            trigger = UNTimeIntervalNotificationTrigger(timeInterval: checkInterval, repeats: false)
-        }
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: checkInterval, repeats: false)
         
         let identifier = "\(type.rawValue)_notification"
         let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
@@ -243,30 +220,6 @@ class NotificationScheduler {
                 UserDefaults.shared.set(Date(), forKey: "lastNotificationTime_\(type.rawValue)")
             }
         }
-    }
-
-    private func createCalendarTrigger(for type: NotificationType) -> UNCalendarNotificationTrigger {
-        var components = DateComponents()
-        switch type {
-        case .dailyReminder:
-            if let dailyTime = UserDefaults.shared.object(forKey: "dailyReminderTime") as? Date {
-                components = Calendar.current.dateComponents([.hour, .minute], from: dailyTime)
-            } else {
-                components.hour = 20
-                components.minute = 0
-            }
-        case .weeklyReport:
-            if let weeklyTime = UserDefaults.shared.object(forKey: "weeklyReportTime") as? Date {
-                components = Calendar.current.dateComponents([.hour, .minute], from: weeklyTime)
-            } else {
-                components.hour = 18
-                components.minute = 0
-            }
-            components.weekday = UserDefaults.shared.integer(forKey: "weeklyReportWeekday")
-        default:
-            fatalError("Unexpected notification type for calendar trigger")
-        }
-        return UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
     }
 
     private func checkAndUpdateNotifications() {

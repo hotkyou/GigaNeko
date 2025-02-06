@@ -91,6 +91,18 @@ struct MobilePlansView: View {
             return filtered
         }
     }
+    
+    var recommendedPlan: MobilePlan? {
+        let totalUsage = userDataUsage + additionalData
+        let eligiblePlans = plans.filter { plan in
+            if let planData = plan.dataAmountGB {
+                return planData >= totalUsage
+            } else {
+                return true // 無制限プランは常に適格
+            }
+        }
+        return eligiblePlans.min(by: { $0.monthlyFee < $1.monthlyFee })
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -114,6 +126,10 @@ struct MobilePlansView: View {
                     }.tag(2)
             }
             .frame(height: 150)
+            
+            if let recommended = recommendedPlan {
+                RecommendedPlanView(plan: recommended, userDataUsage: userDataUsage + additionalData)
+            }
             
             SortOrderPicker(sortOrder: $sortOrder)
                 .padding(.vertical, 8)
@@ -142,7 +158,9 @@ struct DataFilterView: View {
             
             if dataFilter == "今月の使用量" {
                 HStack {
-                    Text("今月の使用量: \(userDataUsage)GB + \(additionalData)GB")
+                    Text("今月の使用量:")
+                    Text("\(userDataUsage)GB + \(additionalData)GB")
+                        .bold()
                     Stepper("", value: $additionalData, in: -userDataUsage...100)
                 }
             }
@@ -237,6 +255,41 @@ struct PlanRow: View {
             }
         }
         .padding(.vertical, 4)
+    }
+}
+
+struct RecommendedPlanView: View {
+    let plan: MobilePlan
+    let userDataUsage: Int
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("おすすめプラン")
+                .font(.headline)
+                .foregroundColor(.green)
+            HStack {
+                VStack(alignment: .leading) {
+                    Text(plan.brand)
+                        .font(.subheadline)
+                    Text(plan.planName)
+                        .font(.caption)
+                }
+                Spacer()
+                VStack(alignment: .trailing) {
+                    Text("¥\(plan.monthlyFee)")
+                        .font(.subheadline)
+                    Text(plan.dataAmount)
+                        .font(.caption)
+                }
+            }
+            Text("使用量: \(userDataUsage)GB")
+                .font(.caption)
+                .foregroundColor(.gray)
+        }
+        .padding()
+        .background(Color.green.opacity(0.1))
+        .cornerRadius(10)
+        .padding(.horizontal)
     }
 }
 
