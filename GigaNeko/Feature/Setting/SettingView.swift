@@ -84,11 +84,11 @@ struct MenuItemView: View {
         Group {
             switch type {
             case .review:
-                Link(destination: URL(string: "https://apps.apple.com/jp/app/id6553989978?action=write-review")!) {
+                Link(destination: URL(string: "https://apps.apple.com/jp/app/id6739386412?action=write-review")!) {
                     menuContent
                 }
             case .share:
-                ShareLink(item: URL(string: "https://apps.apple.com/us/app/japan-travel-yokoso/id6553989978")!) {
+                ShareLink(item: URL(string: "https://apps.apple.com/jp/app/giganeko/id6739386412")!) {
                     menuContent
                 }
             case .terms:
