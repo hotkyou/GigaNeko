@@ -316,7 +316,7 @@ class GiganekoPoint: ObservableObject {
             print("ポイント消費に失敗しました")
             return
         }
-        stress = min(0,stress - Self.reduction)
+        stress = max(0,stress - Self.reduction)
     }
     
     ///好感度追加
