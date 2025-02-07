@@ -143,7 +143,7 @@ class GiganekoPoint: ObservableObject {
     // MARK: - 初期化
     init() {
         // プロパティを直接初期化
-        self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 20000
+        self.currentPoints = UserDefaults.shared.value(forKey: UserDefaultsKeys.currentPoints) as? Int ?? 1000
         self.isAlreadyExecuted = UserDefaults.shared.value(forKey: UserDefaultsKeys.isAlreadyExecuted) as? Bool ?? false
         self.lastExecutedMonth = UserDefaults.shared.value(forKey: UserDefaultsKeys.lastExecutedMonth) as? Int ?? 0
         self.stamina = UserDefaults.shared.value(forKey: UserDefaultsKeys.stamina) as? Double ?? 50.0
