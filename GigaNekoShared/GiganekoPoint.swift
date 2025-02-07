@@ -110,7 +110,7 @@ class GiganekoPoint: ObservableObject {
     private static let maxPoints = 5000 // 一ヶ月にもらえる最大のポイント数
     private static let billingOptions = [120, 630, 1320, 2760, 5760, 12000] // 課金ポイント量
     private static let feedOptions = [0: 24, 100: 48, 200: 72, 900: 240] // 必要ポイント: スタミナ時間
-    private static let giftOptions = [1000: 100, 5000: 500, 10000: 1000] // 必要ポイント: 好感度
+    private static let giftOptions = [1000: 100, 5000: 500, 8000: 1000] // 必要ポイント: 好感度
     private static let reduction = 20 //ストレス削減値
 
     // UserDefaultsキー
