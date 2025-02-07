@@ -33,10 +33,16 @@ class TutorialViewModel: ObservableObject {
             subText: "毎日のデータ通信で\nかわいいねこと暮らせるにゃ"
         ),
         TutorialContent(
-            title: "ポイント",
+            title: "ポイント①",
             imageName: "TutorialPoint",
             mainText: "まずはポイントを貯めるにゃ",
             subText: "ポイントはねこと暮らすのに必要にゃ\nショップでえさを買うと\nポイントがもらえるにゃん"
+        ),
+        TutorialContent(
+            title: "ポイント②",
+            imageName: "TutorialPoint",
+            mainText: "ポイント取得方法を教えるにゃ",
+            subText: "毎日ログインをしたり\n毎月の通信量を節約するほど\nポイントを獲得できるにゃん"
         ),
         TutorialContent(
             title: "えさ",
