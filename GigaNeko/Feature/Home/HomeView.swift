@@ -54,6 +54,7 @@ struct HomeView: View {
     
     private func condition(){
         giganekoPoint.checkDate()
+        giganekoPoint.loginPoints()
     }
     
     private func caress(){

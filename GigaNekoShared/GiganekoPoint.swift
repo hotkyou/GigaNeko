@@ -104,6 +104,10 @@ class GiganekoPoint: ObservableObject {
     @Published var lastLogin: Date {
         didSet { saveToUserDefaults(key: UserDefaultsKeys.lastLogin, value: lastLogin) }
     }
+    ///ログインチェック
+    @Published var dateCheck: Int {
+        didSet { saveToUserDefaults(key: UserDefaultsKeys.dateCheck, value: dateCheck) }
+    }
     @Published var alertMessage: String?
 
     // MARK: - 定数
@@ -138,6 +142,7 @@ class GiganekoPoint: ObservableObject {
         static let treasure = "GiganekoPoint.treasure"
         static let tlevelUp = "GiganekoPoint.mlevelUp"
         static let lastLogin = "GiganekoPoint.lastLogin"
+        static let dateCheck = "GiganekoPoint.dateheck"
     }
 
     // MARK: - 初期化
@@ -166,10 +171,11 @@ class GiganekoPoint: ObservableObject {
         self.treasure = UserDefaults.shared.value(forKey: UserDefaultsKeys.treasure) as? Int ?? 1
         self.tlevelUp = UserDefaults.shared.value(forKey: UserDefaultsKeys.tlevelUp) as? Int ?? 1000
         if let savedDate = UserDefaults.shared.object(forKey: UserDefaultsKeys.lastLogin) as? Date {
-                self.lastLogin = savedDate
-            } else {
-                self.lastLogin = Date()
-            }
+            self.lastLogin = savedDate
+        } else {
+            self.lastLogin = Date()
+        }
+        self.dateCheck = UserDefaults.shared.object(forKey: UserDefaultsKeys.dateCheck) as? Int ?? 0
         
         resetExecutedFlagIfNeeded()
     }
@@ -218,7 +224,7 @@ class GiganekoPoint: ObservableObject {
         if let lastDayOfMonth = calendar.date(from: DateComponents(
             year: calendar.component(.year, from: currentDate),
             month: calendar.component(.month, from: currentDate) + 1,
-            day: 1)) {  // `day: 0` は前月の最終日を取得するテクニック
+            day: 1)) {
             let isLastDay = calendar.isDate(currentDate, inSameDayAs: lastDayOfMonth)
             return isLastDay
         }
@@ -235,9 +241,6 @@ class GiganekoPoint: ObservableObject {
         }
     }
     
-    ///2ヶ月以降のポイント計算
-    
-    
     /// ポイントを消費
     func consumePoints(consumptionPoints: Int)-> Bool {
         if consumptionPoints > currentPoints {
@@ -250,9 +253,14 @@ class GiganekoPoint: ObservableObject {
         }
     }
 
-    /// ミッションによるポイント付与
-    func missionPoints() {
-        currentPoints += 5
+    /// ログインによるポイント付与
+    func loginPoints() {
+        let currentDate = Calendar.current.component(.day, from: Date())
+            
+        if dateCheck != currentDate {
+            currentPoints += 20
+            dateCheck = currentDate
+        }
     }
 
     /// 課金ポイント付与
@@ -264,10 +272,6 @@ class GiganekoPoint: ObservableObject {
         print(currentPoints)
         currentPoints += Self.billingOptions[index]
         print(currentPoints)
-    }
-    ///test
-    func test(){
-        currentPoints += 1000
     }
     
     // MARK: - 状態関連の処理
