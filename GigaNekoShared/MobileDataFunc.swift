@@ -40,27 +40,17 @@ func saveDataUsage() {
     
     if dataUsageArray.isEmpty {
         print("初回起動")
-        // 初回起動時は0を記録
         wifiDifference = 0
         wwanDifference = 0
-    } else if currentLaunchTime <  previousLaunchTime {
-        print("再起動")
-        // 再起動後の処理
+    } else if currentLaunchTime < previousLaunchTime || currentWifi < previousWifi || currentWwan < previousWwan {
+        print("再起動またはカウンターリセットを検出")
+        print(currentWwan, currentWifi)
         wifiDifference = currentWifi
         wwanDifference = currentWwan
     } else {
         print("通常起動")
-        // 通常起動時の処理（差分計算）
-        print(previousWifi, previousWwan)
-        if currentWifi >= previousWifi && currentWwan >= previousWwan {
-            // 両方のカウンターが正常な場合
-            wifiDifference = currentWifi - previousWifi
-            wwanDifference = currentWwan - previousWwan
-        } else {
-            // 何らかのタイミングで前の値よりも下がった場合
-            print("カウンターリセット検出")
-            return
-        }
+        wifiDifference = currentWifi - previousWifi
+        wwanDifference = currentWwan - previousWwan
     }
     // 差DBに入れるためのデータ
     let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": Double(wwanDifference), "date": currentDate]
