@@ -411,10 +411,10 @@ struct HomeView: View {
         .onReceive(staminaTimer) { _ in
             updateLocalStaminaTime()
         }
-//        .safeAreaInset(edge: .bottom) {
-//            BannerAd(adUnitID: "ca-app-pub-2291273458039892/4783595417")
-//                .frame(height: 50)
-//        }
+        .safeAreaInset(edge: .bottom) {
+            BannerAd(adUnitID: "ca-app-pub-2291273458039892/4783595417")
+                .frame(height: 50)
+        }
         .onAppear {
             // 初期値を設定
             syncStaminaTime()
