@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ShopHeaderView: View {
     @StateObject var giganekoPoint = GiganekoPoint.shared
+    @State private var showingCommercialLaw = false
     
     var body: some View {
         HStack {
@@ -9,6 +10,12 @@ struct ShopHeaderView: View {
                 .font(.title)
                 .fontWeight(.bold)
             
+            Spacer()
+            HStack() {
+                LegalLinkButton(title: "特定商取引法\nの表記") {
+                    showingCommercialLaw = true
+                }
+            }
             Spacer()
             
             HStack(spacing: 8) {
@@ -24,6 +31,9 @@ struct ShopHeaderView: View {
             .background(Color.white)
             .cornerRadius(12)
             .shadow(radius: 2, x: 0, y: 2)
+        }
+        .sheet(isPresented: $showingCommercialLaw) {
+            CommercialLawView()
         }
     }
 }

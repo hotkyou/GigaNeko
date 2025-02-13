@@ -4,7 +4,7 @@ struct FurnitureView: View {
     @StateObject var viewModel = FurnitureViewModel()
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             LinearGradient(
                 gradient: Gradient(colors: Constants.mainGradient),
                 startPoint: .topLeading,
@@ -37,6 +37,8 @@ struct FurnitureView: View {
                             insertion: .move(edge: .trailing).combined(with: .opacity),
                             removal: .move(edge: .leading).combined(with: .opacity)
                         ))
+                        .aspectRatio(1, contentMode: .fit)
+                        .frame(maxWidth: 350, maxHeight: 350)
                     }
                     
                     // Navigation Buttons
@@ -67,7 +69,6 @@ struct FurnitureView: View {
                     }
                     .padding(.horizontal, 32)
                 }
-                .frame(maxHeight: .infinity)
                 
                 Spacer(minLength: 20)
                 
@@ -88,6 +89,10 @@ struct FurnitureView: View {
                     }
                 }
             }
+            .padding(.bottom, 50)
+            
+            BannerAd(adUnitID: "ca-app-pub-2291273458039892/3458851555")
+                .frame(height: 50)
         }
     }
 }

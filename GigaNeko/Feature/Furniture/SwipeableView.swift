@@ -14,7 +14,8 @@ struct SwipeableView: View {
         Image(item.imageName)
             .resizable()
             .scaledToFit()
-            .frame(width: 280, height: 280)
+            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: 350, maxHeight: 350)
             .shadow(color: Constants.Shadows.large, radius: 12, x: 0, y: 6)
             .overlay(
                 RoundedRectangle(cornerRadius: Constants.Layout.cornerRadius)

@@ -274,6 +274,12 @@ class GiganekoPoint: ObservableObject {
         print(currentPoints)
     }
     
+    func rewardAdPoints(adPoint: Int) {
+        print(currentPoints)
+        currentPoints += adPoint
+        print(currentPoints)
+    }
+    
     // MARK: - 状態関連の処理
     
     ///スタミナ追加

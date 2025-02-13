@@ -21,12 +21,19 @@ struct ShopView: View {
             )
             .edgesIgnoringSafeArea(.top)
             
-            VStack(spacing: 16) {
-                ShopHeaderView()
-                ShopTabView(selectedTab: $selectedTab)
+            VStack(spacing: 0) {
+                VStack(spacing: 16) {
+                    ShopHeaderView()
+                    ShopTabView(selectedTab: $selectedTab)
+                }
+                .padding(.horizontal)
+                .padding(.top)
                 
                 ScrollView {
                     VStack(spacing: 12) {
+                        if selectedTab == "ポイント" {
+                            RewardAdCard()
+                        }
                         ForEach(currentProducts) { product in
                             ShopProductCard(
                                 product: product,
@@ -40,9 +47,13 @@ struct ShopView: View {
                         }
                     }
                     .padding(.top, 8)
+                    .padding(.horizontal)
+                    .padding(.bottom, 50) // BannerAdの高さ分の余白を追加
                 }
+                
+                BannerAd(adUnitID: "ca-app-pub-2291273458039892/9397573945")
+                    .frame(height: 50)
             }
-            .padding()
             
             if showingProductDetail, let product = selectedProduct {
                 Color.black.opacity(0.4)
@@ -84,6 +95,27 @@ struct ShopView: View {
             withAnimation {
                 showingProductDetail = false
             }
+        }
+    }
+}
+
+struct LegalLinkButton: View {
+    let title: String
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            Text(title)
+                .font(.caption2)
+                .foregroundColor(.gray)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .background(Color.white.opacity(0.5))
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                )
         }
     }
 }

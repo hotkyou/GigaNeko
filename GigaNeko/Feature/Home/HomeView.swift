@@ -79,13 +79,10 @@ struct HomeView: View {
             ZStack {
                 // メインコンテンツ
                 GeometryReader { geometry in
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        Image("HomeBackGroundImage")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(height: geometry.size.height)
-                            .offset(x: 0, y: 0)
-                    }
+                    Image("HomeBackGroundImage")
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .edgesIgnoringSafeArea(.top)
                     
                     // 上部のステータス表示
                     HStack {
@@ -358,7 +355,13 @@ struct HomeView: View {
                         Spacer()
                     }
                 }
-                .edgesIgnoringSafeArea(.all)
+                .edgesIgnoringSafeArea(.top)
+                
+                VStack {
+                    Spacer()
+                    BannerAd(adUnitID: "ca-app-pub-2291273458039892/4783595417")
+                        .frame(height: 50)
+                }
                 
                 // チュートリアル画面
                 if tutorialViewModel.showTutorial {
@@ -407,15 +410,12 @@ struct HomeView: View {
                     }
                 }
             }
-            .edgesIgnoringSafeArea(.all)
+            .edgesIgnoringSafeArea(.top)
         } // NavigationView
         .onReceive(staminaTimer) { _ in
             updateLocalStaminaTime()
         }
-        .safeAreaInset(edge: .bottom) {
-            BannerAd(adUnitID: "ca-app-pub-2291273458039892/4783595417")
-                .frame(height: 50)
-        }
+
         .onAppear {
             // 初期値を設定
             syncStaminaTime()
@@ -446,7 +446,6 @@ struct HomeView: View {
                 syncStaminaTime()
             }
         }
-        .scrollDisabled(true)
     }
     
     private func requestNotificationPermission() {
@@ -513,7 +512,7 @@ struct TutorialOverlay<Content: View>: View {
     
     var body: some View {
         Color.black.opacity(0.4)
-            .edgesIgnoringSafeArea(.all)
+            .edgesIgnoringSafeArea(.top)
         
         VStack {
             Spacer()

@@ -64,6 +64,11 @@ struct SettingView: View {
                     }
                     .padding(.vertical)
                 }
+                VStack {
+                    Spacer()
+                    BannerAd(adUnitID: "ca-app-pub-2291273458039892/3267279868")
+                        .frame(height: 50)
+                }
             }
         }
     }

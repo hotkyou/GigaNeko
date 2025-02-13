@@ -138,6 +138,7 @@ struct MobilePlansView: View {
         }
         .navigationBarTitle("携帯料金プラン比較", displayMode: .inline)
         .navigationBarBackButtonHidden(false)
+        .toolbar(.hidden, for: .tabBar)
     }
 }
 

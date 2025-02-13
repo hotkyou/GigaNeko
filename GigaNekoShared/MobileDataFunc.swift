@@ -35,38 +35,30 @@ func saveDataUsage() {
     let currentLaunchTime = launchTime()
     
     // データの差分を計算
-    var wifiDifference: UInt64
-    var wwanDifference: UInt64
+    let wifiDifference = dataUsageArray.isEmpty ? 0 :
+        currentLaunchTime < previousLaunchTime ? currentWifi :
+        max(0, currentWifi - previousWifi)
+
+    let wwanDifference = dataUsageArray.isEmpty ? 0 :
+        currentLaunchTime < previousLaunchTime ? currentWwan :
+        max(0, currentWwan - previousWwan)
     
-    if dataUsageArray.isEmpty {
-        print("初回起動")
-        wifiDifference = 0
-        wwanDifference = 0
-    } else if currentLaunchTime < previousLaunchTime || currentWifi < previousWifi || currentWwan < previousWwan {
-        print("再起動またはカウンターリセットを検出")
-        print(currentWwan, currentWifi)
-        wifiDifference = currentWifi
-        wwanDifference = currentWwan
-    } else {
-        print("通常起動")
-        wifiDifference = currentWifi - previousWifi
-        wwanDifference = currentWwan - previousWwan
+    if wifiDifference > 0 || wwanDifference > 0 {
+        // 差DBに入れるためのデータ
+        let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
+        dataUsageArray.append(differenceEntry)
+        UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
+        
+        //ポイント付与
+        let giganeko = GiganekoPoint.shared
+        let userDataSetting = UserDefaults.shared.integer(forKey: "dataNumber")
+        giganeko.CalculatePoints(settingDataGB: userDataSetting)
+        
+        print("Data Usage Array with Differences: \(dataUsageArray)")
     }
-    // 差DBに入れるためのデータ
-    let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": Double(wwanDifference), "date": currentDate]
+    
     let newLastUsage: [String: Any] = ["wifi": currentWifi, "wwan": currentWwan, "launchtime": currentLaunchTime]
-    dataUsageArray.append(differenceEntry)
-    
-    //ポイント付与
-    let giganeko = GiganekoPoint.shared
-    let userDataSetting = UserDefaults.shared.integer(forKey: "dataNumber")
-    giganeko.CalculatePoints(settingDataGB: userDataSetting)
-    
-    UserDefaults.shared.set(dataUsageArray, forKey: "dataUsage")
     UserDefaults.shared.set(newLastUsage, forKey: "lastUsage")
-    UserDefaults.shared.synchronize()
-    
-    print("Data Usage Array with Differences: \(dataUsageArray)")
 }
 
 func getLatestDataUsage() -> [String: Any]? {

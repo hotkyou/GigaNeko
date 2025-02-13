@@ -1,10 +1,3 @@
-//
-//  BannerView.swift
-//  GigaNeko
-//
-//  Created by 水原　樹 on 2025/02/07.
-//
-
 import SwiftUI
 import GoogleMobileAds
 
