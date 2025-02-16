@@ -43,7 +43,7 @@ func saveDataUsage() {
         currentLaunchTime < previousLaunchTime ? currentWwan :
         max(0, currentWwan - previousWwan)
     
-    if wifiDifference > 0 || wwanDifference > 0 {
+    if dataUsageArray.isEmpty || wifiDifference > 0 || wwanDifference > 0 {
         // 差DBに入れるためのデータ
         let differenceEntry: [String: Any] = ["wifi": wifiDifference, "wwan": wwanDifference, "date": currentDate]
         dataUsageArray.append(differenceEntry)
